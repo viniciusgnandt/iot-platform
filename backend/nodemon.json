@@ -1,0 +1,13 @@
+{
+  "watch": ["src"],
+  "ext": "js,json",
+  "ignore": [
+    "geocode-cache.json",
+    "data/",
+    "data/*.db",
+    "data/*.db-wal",
+    "data/*.db-shm",
+    "node_modules/"
+  ],
+  "delay": 500
+}

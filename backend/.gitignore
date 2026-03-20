@@ -1,0 +1,4 @@
+node_modules/
+.env
+geocode-cache.json
+data/
