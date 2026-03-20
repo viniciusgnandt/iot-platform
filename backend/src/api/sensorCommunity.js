@@ -35,10 +35,10 @@ function extractValue(sensordatavalues = [], keys) {
  * Uses type=SDS011 (PM sensor) + DHT22 (temp/humidity)
  */
 export async function fetchSensorCommunitySensors(options = {}) {
-  const { country = 'DE', limit = config.sensors.maxPerSource } = options;
+  const { limit = config.sensors.maxPerSource } = options;
 
   try {
-    logger.info('Fetching from Sensor.Community...', { country });
+    logger.info('🌍 Sensor.Community: Buscando sensores globalmente...');
 
     // Fetch PM sensors (SDS011 is most common PM sensor)
     const [pmResponse, tempResponse] = await Promise.allSettled([

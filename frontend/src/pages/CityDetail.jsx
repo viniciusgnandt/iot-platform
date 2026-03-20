@@ -9,6 +9,7 @@ import {
 } from '../components/ui/index.jsx';
 import { CityMeasurementsChart } from '../components/charts/EnvironmentalChart.jsx';
 import { formatMeasurement } from '../utils/icaud.js';
+import { formatFullDateTimeBRT } from '../utils/dateFormatter.js';
 
 const SensorMap = lazy(() => import('../components/map/SensorMap.jsx'));
 
@@ -143,7 +144,7 @@ export default function CityDetail() {
 
       {/* Metadata */}
       <div className="text-xs text-gray-400 text-right">
-        Última atualização: {new Date(city.updatedAt).toLocaleString('pt-BR')}
+        Última atualização: {formatFullDateTimeBRT(city.updatedAt)} (BRT)
       </div>
     </div>
   );

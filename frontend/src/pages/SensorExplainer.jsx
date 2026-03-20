@@ -171,26 +171,10 @@ export default function SensorExplainer() {
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-5">Tipos de Sensores na EcoSense</h2>
         <p className="text-gray-600 mb-6">
-          A plataforma usa dados de 3 redes públicas diferentes, cada uma com seus próprios tipos de sensores:
+          A plataforma integra dados de <strong>2 redes públicas</strong> diferentes, agregando sensores comunitários e estações meteorológicas:
         </p>
 
         <div className="space-y-6">
-          {/* OpenSenseMap */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <span>📦</span> OpenSenseMap — senseBox
-            </h3>
-            <SensorTypeCard
-              icon="📦"
-              name="senseBox MCU (v2)"
-              model="senseBox:home"
-              description="Kit educacional modular para monitoramento ambiental. Bastante popular na Europa, especialmente em escolas e universidades. Permite adicionar múltiplos sensores em uma única caixa."
-              measurements={['Temperatura', 'Umidade', 'Pressão', 'PM2.5', 'PM10', 'CO2', 'Luz']}
-              manufacturer="senseBox Team / Universidade de Münster"
-              cost="€100-150 (DIY) ou €200-300 (pré-montado)"
-            />
-          </div>
-
           {/* Sensor.Community */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -218,19 +202,19 @@ export default function SensorExplainer() {
             </div>
           </div>
 
-          {/* OpenWeather */}
+          {/* Open-Meteo */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <span>⛅</span> OpenWeather — Estações Meteorológicas
+              <span>⛅</span> Open-Meteo — Estações Meteorológicas
             </h3>
             <SensorTypeCard
               icon="⛅"
-              name="Estações Meteorológicas Profissionais"
-              model="Vários (Davis, Vaisala, etc)"
-              description="Sensores de qualidade profissional instalados por agências meteorológicas, aeroportos e estações científicas. Dados usados como fallback quando poucos sensores comunitários disponíveis."
-              measurements={['Temperatura', 'Umidade', 'Pressão', 'Vento', 'Precipitação']}
-              manufacturer="Davis Instruments, Vaisala, etc"
-              cost="€1000+ (profissional)"
+              name="Estações Meteorológicas (Open-Meteo)"
+              model="Reanálise + estações globais"
+              description="API gratuita e aberta que fornece dados meteorológicos de alta resolução para qualquer coordenada do mundo. Combina dados de estações meteorológicas e modelos numéricos. Cobre cidades brasileiras e europeias."
+              measurements={['Temperatura', 'Umidade', 'Velocidade do Vento']}
+              manufacturer="Open-Meteo (open source)"
+              cost="Gratuito (sem chave de API)"
             />
           </div>
         </div>
@@ -317,12 +301,12 @@ export default function SensorExplainer() {
         <h2 className="text-2xl font-bold text-gray-900 mb-5">Recursos para Aprender Mais</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">📦 OpenSenseMap</h3>
+            <h3 className="font-semibold text-gray-900 mb-3">⛅ Open-Meteo</h3>
             <p className="text-sm text-gray-600 mb-3">
-              Plataforma oficial para criar senseBoxes e explorar dados de sensores educacionais.
+              API meteorológica gratuita e open source com dados globais de alta resolução.
             </p>
-            <a href="https://opensensemap.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
-              opensensemap.org →
+            <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
+              open-meteo.com →
             </a>
           </div>
           <div>
@@ -340,11 +324,11 @@ export default function SensorExplainer() {
               Como acessar dados das redes públicas programaticamente via REST APIs.
             </p>
             <div className="space-y-1">
-              <a href="https://api.opensensemap.org/docs" target="_blank" rel="noopener noreferrer" className="block text-blue-600 hover:underline text-sm font-medium">
-                OpenSenseMap API →
-              </a>
               <a href="https://github.com/opendata-stuttgart/meta/wiki/APIs" target="_blank" rel="noopener noreferrer" className="block text-blue-600 hover:underline text-sm font-medium">
                 Sensor.Community API →
+              </a>
+              <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener noreferrer" className="block text-blue-600 hover:underline text-sm font-medium">
+                Open-Meteo API →
               </a>
             </div>
           </div>

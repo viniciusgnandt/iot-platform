@@ -37,6 +37,12 @@ app.use(errorHandler);
 // ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = config.server.port;
 const server = app.listen(PORT, async () => {
+  console.log('\n═══════════════════════════════════════════════════════════════════════');
+  console.log(`  🌿 IoT Environmental Platform Backend`);
+  console.log(`  🚀 Servidor iniciando na porta: ${PORT}`);
+  console.log(`  📍 URL: http://localhost:${PORT}`);
+  console.log('═══════════════════════════════════════════════════════════════════════\n');
+
   logger.info(`🌿 IoT Environmental Platform API running on port ${PORT}`);
   logger.info(`   Environment: ${config.server.env}`);
   logger.info(`   CORS origin: ${config.server.corsOrigin}`);
@@ -80,19 +86,24 @@ async function warmUpCache() {
 
     // 1. Sensores — aguarda o fetch completo das APIs externas
     logger.info('🔄 [1/3] Buscando sensores...');
+
+    // Buscar TODOS os sensores brutos para salvar no MongoDB (histórico)
+    let allSensorsRaw = [];
+    try {
+      allSensorsRaw = await sensorMod.fetchAllSensorsRaw();
+      if (config.database.mongoEnabled && allSensorsRaw.length > 0) {
+        await saveSensorReadingsBatch(allSensorsRaw);
+        logger.info(`💾 ${allSensorsRaw.length} leituras de sensores salvas no MongoDB`);
+      }
+    } catch (err) {
+      logger.warn(`⚠️  Erro ao buscar/salvar sensores brutos: ${err.message}`);
+    }
+
+    // Buscar sensores com ICAU-D completo para exibir no frontend
     const sensors = await sensorMod.fetchAllSensors();
     await cache.set('sensors:all', sensors, config.cache.ttlSensors);
-    logger.info(`✅ [1/3] Sensores: ${sensors.length} carregados`);
-
-    // Salvar leitura de sensores no MongoDB para histórico
-    if (config.database.mongoEnabled && sensors.length > 0) {
-      try {
-        await saveSensorReadingsBatch(sensors);
-        logger.info(`💾 ${sensors.length} leituras de sensores salvas no MongoDB`);
-      } catch (err) {
-        logger.warn(`⚠️  Erro ao salvar sensores no MongoDB: ${err.message}`);
-      }
-    }
+    logger.info(`✅ [1/3] Sensores: ${sensors.length} com ICAU-D completo carregados`);
+    logger.info(`         Total bruto no MongoDB: ${allSensorsRaw.length}`);
 
     // 2. Cidades — agrega usando os sensores já em cache
     logger.info('🔄 [2/3] Agregando cidades...');

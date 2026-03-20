@@ -154,6 +154,12 @@ function computeCityStats(cityData) {
     measurements,
     measurementCounts: counts,
     icaud,
+    sensorList: sensors.map(s => ({
+      id: s.id,
+      name: s.name,
+      source: s.source,
+      deviceType: s.deviceType,
+    })),
     updatedAt:   new Date().toISOString(),
   };
 }
@@ -219,8 +225,26 @@ export async function getCitiesRanking(limit = 50) {
 
 export async function buildRanking(limit) {
   const cities = await getAllCities();
-  return cities
-    .filter(c => c.icaud && c.icaud.score !== null && c.icaud.score !== undefined)
+
+  if (!cities || cities.length === 0) {
+    logger.warn('⚠️  Nenhuma cidade disponível para ranking');
+    return [];
+  }
+
+  // Filtra cidades com score válido
+  const validCities = cities.filter(c => c.icaud && c.icaud.score !== null && c.icaud.score !== undefined);
+
+  if (validCities.length === 0) {
+    logger.warn(`⚠️  Nenhuma cidade com score válido. Total de cidades: ${cities.length}`);
+    // Fallback: retornar todas as cidades ordenadas por sensor count se nenhuma tiver score
+    return cities
+      .slice(0, limit)
+      .map((city, index) => ({ ...city, rank: index + 1 }));
+  }
+
+  logger.info(`✅ Ranking: ${validCities.length} cidades com score válido`);
+
+  return validCities
     .sort((a, b) => (b.icaud.score || 0) - (a.icaud.score || 0))
     .slice(0, limit)
     .map((city, index) => ({ ...city, rank: index + 1 }));

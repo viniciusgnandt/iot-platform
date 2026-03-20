@@ -5,9 +5,9 @@ import 'dotenv/config';
 
 export const config = {
   server: {
-    port: parseInt(process.env.PORT || '3001', 10),
+    port: parseInt(process.env.PORT || '3002', 10),
     env: process.env.NODE_ENV || 'development',
-    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5174',
   },
 
   cache: {
@@ -22,15 +22,8 @@ export const config = {
   },
 
   apis: {
-    openSenseMap: {
-      baseUrl: process.env.OPENSENSEMAP_BASE_URL || 'https://api.opensensemap.org',
-    },
     sensorCommunity: {
       baseUrl: process.env.SENSOR_COMMUNITY_BASE_URL || 'https://data.sensor.community/airrohr/v1/filter',
-    },
-    openWeather: {
-      apiKey: process.env.OPENWEATHER_API_KEY || '',
-      baseUrl: process.env.OPENWEATHER_BASE_URL || 'https://api.openweathermap.org/data/2.5',
     },
   },
 

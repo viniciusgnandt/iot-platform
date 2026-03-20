@@ -1,12 +1,10 @@
 // src/services/sensorService.js
 // Orchestrates sensor fetching from all sources, filtering, and ICAU-D calculation
 
-import { fetchOpenSenseMapSensors }    from '../api/openSenseMap.js';
 import { fetchSensorCommunitySensors } from '../api/sensorCommunity.js';
-import { fetchOpenWeatherSensors }     from '../api/openWeather.js';
 import { fetchAllBrasilSensors }       from '../api/brazilSensors.js';
 import { calculateICAUD }              from '../models/icaud.js';
-import { isActive, hasValidMeasurements, hasAllICAUDComponents } from '../models/sensor.js';
+import { isActive } from '../models/sensor.js';
 import { cache }                       from '../utils/cache.js';
 import { config }                      from '../config/index.js';
 import { logger }                      from '../utils/logger.js';
@@ -30,37 +28,26 @@ function enrichWithICAUD(sensor) {
 export async function fetchAllSensors() {
   logger.info('Buscando sensores de todas as fontes...');
 
-  const [osmSensors, scSensors, owSensors, brasilSensors] = await Promise.allSettled([
-    fetchOpenSenseMapSensors(),
+  const [scSensors, brasilSensors] = await Promise.allSettled([
     fetchSensorCommunitySensors(),
-    fetchOpenWeatherSensors(),
     fetchAllBrasilSensors(),
   ]);
 
   const all = [
-    ...(osmSensors.status === 'fulfilled' ? osmSensors.value : []),
-    ...(scSensors.status  === 'fulfilled' ? scSensors.value  : []),
-    ...(owSensors.status  === 'fulfilled' ? owSensors.value  : []),
-    ...(brasilSensors.status === 'fulfilled' ? brasilSensors.value : []),
+    ...(scSensors.status      === 'fulfilled' ? scSensors.value      : []),
+    ...(brasilSensors.status  === 'fulfilled' ? brasilSensors.value  : []),
   ];
 
   logger.info(`Total bruto: ${all.length} sensores`);
 
-  // Filtra apenas sensores ativos com TODOS os 4 componentes do ICAU-D
+  // Filtra apenas sensores ativos com localização válida
   const filtered = all.filter(s =>
     isActive(s, config.sensors.maxAgeHours) &&
-    hasAllICAUDComponents(s) &&
     !isNaN(s.location.lat) &&
     !isNaN(s.location.lon)
   );
 
-  const incompleteSensors = all.filter(s =>
-    isActive(s, config.sensors.maxAgeHours) &&
-    !hasAllICAUDComponents(s)
-  ).length;
-
-  logger.info(`Sensores ativos com todos componentes ICAU-D: ${filtered.length}`);
-  logger.info(`Sensores excluídos (componentes incompletos): ${incompleteSensors}`);
+  logger.info(`Sensores ativos: ${filtered.length}`);
 
   const enriched = filtered.map(enrichWithICAUD);
 
@@ -69,6 +56,36 @@ export async function fetchAllSensors() {
   await cache.del('cities:ranking:50');
 
   return enriched;
+}
+
+/**
+ * Busca todos os sensores brutos (sem filtrar por ICAU-D completo)
+ * para salvar histórico no MongoDB. Inclui sensores com dados incompletos.
+ */
+export async function fetchAllSensorsRaw() {
+  logger.info('Buscando todos os sensores brutos para histórico...');
+
+  const [scSensors, brasilSensors] = await Promise.allSettled([
+    fetchSensorCommunitySensors(),
+    fetchAllBrasilSensors(),
+  ]);
+
+  const all = [
+    ...(scSensors.status      === 'fulfilled' ? scSensors.value      : []),
+    ...(brasilSensors.status  === 'fulfilled' ? brasilSensors.value  : []),
+  ];
+
+  // Filtra apenas sensores ativos (sem filtrar por ICAU-D)
+  const filtered = all.filter(s =>
+    isActive(s, config.sensors.maxAgeHours) &&
+    !isNaN(s.location.lat) &&
+    !isNaN(s.location.lon)
+  );
+
+  logger.info(`Total sensores brutos para histórico: ${filtered.length}`);
+
+  // Enriquece com ICAU-D (pode ter valores null se componentes faltam)
+  return filtered.map(enrichWithICAUD);
 }
 
 /**
@@ -81,7 +98,7 @@ export async function getAllSensors() {
 
 export async function getSensorsNear(lat, lon, radiusKm = 50) {
   const { haversineDistance } = await import('../utils/geo.js');
-  const all = await getAllSensors();
+  const all = await getAllSensors() || [];
   return all.filter(s =>
     haversineDistance(lat, lon, s.location.lat, s.location.lon) <= radiusKm
   );

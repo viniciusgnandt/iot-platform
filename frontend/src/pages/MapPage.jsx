@@ -10,9 +10,8 @@ const SensorMap = lazy(() => import('../components/map/SensorMap.jsx'));
 
 const SOURCE_OPTIONS = [
   { value: '',                 label: 'Todas as Fontes' },
-  { value: 'opensensemap',     label: 'OpenSenseMap' },
   { value: 'sensor_community', label: 'Sensor.Community' },
-  { value: 'openweather',      label: 'OpenWeather' },
+  { value: 'open_meteo',       label: 'Open-Meteo' },
 ];
 
 export default function MapPage() {
@@ -70,15 +69,15 @@ export default function MapPage() {
         {SOURCE_OPTIONS.slice(1).map(src => {
           const count = sensors.filter(s => s.source === src.value).length;
           return (
-            <div key={src.value} className="bg-white rounded-lg border border-gray-100 p-3 text-center shadow-sm">
+            <div key={src.value} className="bg-white rounded-lg border border-gray-100 p-3 text-center shadow-sm hover:shadow-md transition-shadow">
               <div className="text-2xl font-bold font-mono text-gray-700">{count}</div>
               <div className="text-xs text-gray-500 mt-0.5">{src.label}</div>
             </div>
           );
         })}
-        <div className="bg-green-50 rounded-lg border border-green-100 p-3 text-center shadow-sm">
-          <div className="text-2xl font-bold font-mono text-green-700">{sensors.length}</div>
-          <div className="text-xs text-green-600 mt-0.5">Total Ativo</div>
+        <div className="bg-green-50 rounded-lg border border-green-100 p-3 text-center shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-2xl font-bold font-mono text-green-700">{filtered.length}</div>
+          <div className="text-xs text-green-600 mt-0.5">Exibindo</div>
         </div>
       </div>
     </div>

@@ -20,6 +20,7 @@ function GlobalStats({ cities = [], sensors = [] }) {
   const avgTemp = sensors.filter(s => s.measurements.temperature !== null);
   const avgHum  = sensors.filter(s => s.measurements.humidity !== null);
   const avgPm25 = sensors.filter(s => s.measurements.pm25 !== null);
+  const avgWind = sensors.filter(s => s.measurements.windSpeed !== null);
 
   const mean = (arr, field) =>
     arr.length > 0
@@ -31,7 +32,7 @@ function GlobalStats({ cities = [], sensors = [] }) {
       <StatCard label="Temperatura Média" value={mean(avgTemp, 'temperature')?.toFixed(1)} unit="°C" icon="🌡️" color="#f59e0b" />
       <StatCard label="Umidade Média"     value={mean(avgHum, 'humidity')?.toFixed(0)}     unit="%"   icon="💧" color="#3b82f6" />
       <StatCard label="PM2.5 Médio"       value={mean(avgPm25, 'pm25')?.toFixed(1)}         unit="µg/m³" icon="🌫️" color="#8b5cf6" />
-      <StatCard label="Sensores Ativos"   value={sensors.length}                             icon="📡" color="#22c55e" />
+      <StatCard label="Velocidade Vento"  value={mean(avgWind, 'windSpeed')?.toFixed(1)}   unit="m/s" icon="💨" color="#06b6d4" />
     </div>
   );
 }

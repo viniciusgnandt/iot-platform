@@ -160,8 +160,7 @@ export default function ICAUDExplainer() {
                 <div>
                   <h4 className="font-semibold text-gray-900">Coleta de Dados</h4>
                   <p className="text-sm text-gray-600 mt-1">
-                    Backend busca dados de 3 redes públicas (OpenSenseMap, Sensor.Community, OpenWeather)
-                    + sensores específicos do Brasil. Requisições feitas a cada 5 minutos via HTTP.
+                    Backend busca dados de 2 fontes: Sensor.Community (qualidade do ar) e Open-Meteo (meteorologia). Requisições a cada 5 minutos via HTTP.
                   </p>
                 </div>
               </div>
@@ -171,8 +170,8 @@ export default function ICAUDExplainer() {
                 <div>
                   <h4 className="font-semibold text-gray-900">Normalização e Validação</h4>
                   <p className="text-sm text-gray-600 mt-1">
-                    Dados de diferentes fontes convertidos para schema unificado. Sensores sem
-                    <strong> todos os 4 componentes do ICAU-D</strong> são filtrados.
+                    Dados de diferentes fontes convertidos para schema unificado. ICAU-D suporta dados parciais
+                    com <strong>rebalanceamento dinâmico de pesos</strong>.
                   </p>
                 </div>
               </div>
@@ -231,39 +230,40 @@ export default function ICAUDExplainer() {
 ┌──────────────────────────────────────────────────────────────┐
 │                   FRONTEND (React)                            │
 │    Dashboard | Mapa | Ranking | Sensores | Como Funciona    │
-│              http://localhost:5173                            │
+│              http://localhost:5174                            │
 └────────────────────────┬─────────────────────────────────────┘
                          │ HTTP/JSON
                          ▼
 ┌──────────────────────────────────────────────────────────────┐
 │              BACKEND (Node.js / Express)                      │
-│             http://localhost:3001/api                         │
+│             http://localhost:3002/api                         │
 ├──────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐      │
-│  │OpenSenseMap │  │Sensor.Community│  │OpenWeather     │      │
-│  │  (global)   │  │  (global)      │  │ (fallback)     │      │
-│  └────┬────────┘  └────┬──────────┘  └────┬───────────┘      │
-│       │                │                   │                  │
-│       └────────────────┼───────────────────┘                  │
-│                        │                                      │
-│           ┌────────────▼─────────────┐                       │
-│           │ Normalize & Validate     │                       │
-│           │ Filter (Need all 4 ICAU) │                       │
-│           └────────────┬─────────────┘                       │
-│                        │                                      │
-│           ┌────────────▼─────────────┐                       │
-│           │ Calculate ICAU-D         │                       │
-│           │ Aggregate by City        │                       │
-│           └────────────┬─────────────┘                       │
-│                        │                                      │
-│         ┌──────────────┼──────────────┐                      │
-│         ▼              ▼              ▼                      │
-│    ┌────────┐    ┌────────┐    ┌────────┐                  │
-│    │MongoDB │    │ Redis  │    │SQLite  │                  │
-│    │        │    │(Cache) │    │ (Geo)  │                  │
-│    └────────┘    └────────┘    └────────┘                  │
-│  (Histórico      (5-10 min   (Reverse  │
-│   30 dias)       TTL)        Geocode)  │
+│  ┌──────────────────┐  ┌────────────────┐                   │
+│  │Sensor.Community  │  │  Open-Meteo    │                   │
+│  │ (PM2.5, Temp,    │  │ (Temp, Umidade,│                   │
+│  │  Umidade)        │  │  Vento)        │                   │
+│  └────┬─────────────┘  └────┬───────────┘                   │
+│       │                      │                               │
+│       └──────────┬───────────┘                               │
+│                  │                                            │
+│     ┌────────────▼─────────────┐                             │
+│     │ Normalize & Validate     │                             │
+│     │ ICAU-D (dynamic weights) │                             │
+│     └────────────┬─────────────┘                             │
+│                  │                                            │
+│     ┌────────────▼─────────────┐                             │
+│     │ Aggregate by City        │                             │
+│     │ (Nominatim geocoding)    │                             │
+│     └────────────┬─────────────┘                             │
+│                  │                                            │
+│       ┌──────────┼──────────┐                                │
+│       ▼          ▼          ▼                                │
+│  ┌────────┐ ┌────────┐ ┌────────┐                           │
+│  │MongoDB │ │ Cache  │ │SQLite  │                           │
+│  │        │ │(Memory)│ │ (Geo)  │                           │
+│  └────────┘ └────────┘ └────────┘                           │
+│ (Histórico  (5-10 min  (Reverse                             │
+│  30 dias)    TTL)       Geocode)                             │
 └──────────────────────────────────────────────────────────────┘
               `}</pre>
             </div>
@@ -323,19 +323,6 @@ export default function ICAUDExplainer() {
           <div>
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Onde os Dados são Obtidos?</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">📦 OpenSenseMap</h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  Plataforma colaborativa com sensores educacionais (senseBoxes).
-                </p>
-                <div className="text-xs text-gray-600 space-y-1">
-                  <div><strong>Cobertura:</strong> Global (maioria Europa)</div>
-                  <div><strong>Atualização:</strong> ~15 min</div>
-                  <div><strong>Dados:</strong> Temp, Umidade, PM, CO2</div>
-                  <div><strong>URL:</strong> api.opensensemap.org</div>
-                </div>
-              </div>
-
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-900 mb-2">🌍 Sensor.Community</h4>
                 <p className="text-sm text-gray-600 mb-3">
@@ -350,28 +337,15 @@ export default function ICAUDExplainer() {
               </div>
 
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">⛅ OpenWeather</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">⛅ Open-Meteo</h4>
                 <p className="text-sm text-gray-600 mb-3">
-                  API meteorológica profissional (usado como fallback).
+                  API meteorológica gratuita e open source. Sem chave de API.
                 </p>
                 <div className="text-xs text-gray-600 space-y-1">
-                  <div><strong>Cobertura:</strong> Global (cidades principais)</div>
-                  <div><strong>Atualização:</strong> ~30 min</div>
-                  <div><strong>Dados:</strong> Temp, Umidade, Vento, Pressão</div>
-                  <div><strong>URL:</strong> api.openweathermap.org</div>
-                </div>
-              </div>
-
-              <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">🇧🇷 Brasil Sensors</h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  Busca especializada de sensores no Brasil com filtro geográfico.
-                </p>
-                <div className="text-xs text-gray-600 space-y-1">
-                  <div><strong>Cobertura:</strong> Brasil (bbox)</div>
-                  <div><strong>Atualização:</strong> ~5-15 min</div>
-                  <div><strong>Dados:</strong> Todos componentes ICAU-D</div>
-                  <div><strong>Fontes:</strong> OpenSenseMap + Sensor.Community</div>
+                  <div><strong>Cobertura:</strong> Global (Brasil + Europa)</div>
+                  <div><strong>Atualização:</strong> Horário</div>
+                  <div><strong>Dados:</strong> Temp, Umidade, Vento</div>
+                  <div><strong>URL:</strong> open-meteo.com</div>
                 </div>
               </div>
 
@@ -655,28 +629,6 @@ export default function ICAUDExplainer() {
           <div className="space-y-4">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Redes de Sensores</h3>
 
-            {/* OpenSenseMap */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900">📦 OpenSenseMap</h4>
-                  <p className="text-sm text-gray-600 mt-1">Plataforma colaborativa com sensores educacionais</p>
-                </div>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Global</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                <div><strong>Cobertura:</strong> Global (maioria Europa)</div>
-                <div><strong>Atualização:</strong> ~15 minutos</div>
-                <div><strong>Dados:</strong> Temp, Umidade, PM2.5, CO2</div>
-                <div><strong>Sensores:</strong> senseBoxes educacionais</div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <a href="https://opensensemap.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                  📍 opensensemap.org →
-                </a>
-              </div>
-            </div>
-
             {/* Sensor.Community */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-4">
@@ -726,71 +678,6 @@ export default function ICAUDExplainer() {
               </div>
             </div>
 
-            {/* AQICN */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900">🔬 AQICN (World Air Quality)</h4>
-                  <p className="text-sm text-gray-600 mt-1">Índice de qualidade do ar em tempo real</p>
-                </div>
-                <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">API Key</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                <div><strong>Cobertura:</strong> 100+ países (Brasil incluído)</div>
-                <div><strong>Atualização:</strong> Tempo real</div>
-                <div><strong>Dados:</strong> PM2.5, PM10, AQI</div>
-                <div><strong>Autenticação:</strong> API Key (grátis)</div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <a href="https://aqicn.org/api" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                  📍 aqicn.org/api →
-                </a>
-              </div>
-            </div>
-
-            {/* BreezoMeter */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900">💨 BreezoMeter</h4>
-                  <p className="text-sm text-gray-600 mt-1">Dados de qualidade do ar de múltiplas fontes</p>
-                </div>
-                <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">API Key</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                <div><strong>Cobertura:</strong> Global (Brasil incluído)</div>
-                <div><strong>Atualização:</strong> Tempo real</div>
-                <div><strong>Dados:</strong> PM2.5, PM10, gases diversos</div>
-                <div><strong>Autenticação:</strong> API Key (conta requerida)</div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <a href="https://breezometer.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                  📍 breezometer.com →
-                </a>
-              </div>
-            </div>
-
-            {/* OpenWeather */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900">🌤️ OpenWeatherMap</h4>
-                  <p className="text-sm text-gray-600 mt-1">API meteorológica profissional com dados de poluição</p>
-                </div>
-                <span className="px-3 py-1 bg-cyan-100 text-cyan-700 rounded-full text-xs font-medium">API Key</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                <div><strong>Cobertura:</strong> Global (Brasil incluído)</div>
-                <div><strong>Atualização:</strong> 4 horas forecast</div>
-                <div><strong>Dados:</strong> Temp, Umidade, PM2.5, AQI</div>
-                <div><strong>Autenticação:</strong> API Key (conta requerida)</div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <a href="https://openweathermap.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                  📍 openweathermap.org →
-                </a>
-              </div>
-            </div>
           </div>
 
           {/* Serviços Complementares */}
@@ -825,24 +712,20 @@ export default function ICAUDExplainer() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Resumo das Fontes</h3>
             <div className="space-y-3 text-sm text-gray-700">
               <div className="flex items-center gap-2">
-                <span className="font-semibold w-32">Sensores Comunitários:</span>
-                <span>OpenSenseMap + Sensor.Community (sempre ativos)</span>
+                <span className="font-semibold w-32">Qualidade do Ar:</span>
+                <span>Sensor.Community — PM2.5, PM10, Temp, Umidade (gratuito)</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold w-32">Meteorologia:</span>
-                <span>Open-Meteo (gratuito) + OpenWeatherMap (opcional)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold w-32">Qualidade do Ar:</span>
-                <span>AQICN (com key) + BreezoMeter (opcional)</span>
+                <span>Open-Meteo — Temp, Umidade, Vento (gratuito)</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold w-32">Geocoding:</span>
-                <span>Nominatim com cache local</span>
+                <span>Nominatim com cache local em SQLite</span>
               </div>
               <div className="mt-3 pt-3 border-t border-blue-200">
                 <p className="text-xs text-gray-600">
-                  💡 <strong>Dica:</strong> Configure as API keys opcionais no arquivo <code className="bg-white px-2 py-1 rounded">.env</code> para expandir a cobertura de dados.
+                  💡 <strong>Dica:</strong> Todas as fontes são gratuitas e não requerem chave de API.
                 </p>
               </div>
             </div>

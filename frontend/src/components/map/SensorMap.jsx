@@ -3,6 +3,7 @@
 
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import { getMarkerColor, classify, formatMeasurement } from '../../utils/icaud.js';
+import { formatFullDateTimeBRT } from '../../utils/dateFormatter.js';
 import { ScoreBadge } from '../ui/index.jsx';
 import { useEffect } from 'react';
 
@@ -22,7 +23,7 @@ function MapController({ center, zoom }) {
 /**
  * Sensor map with circle markers colored by ICAU-D score
  */
-export default function SensorMap({ sensors = [], center = [51.0, 10.0], zoom = 5, height = '500px' }) {
+export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253], zoom = 4, height = '500px' }) {
   return (
     <div style={{ height }} className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
       <MapContainer
@@ -127,14 +128,13 @@ export default function SensorMap({ sensors = [], center = [51.0, 10.0], zoom = 
                     <span>🌡️ {formatMeasurement(m.temperature, '°C')}</span>
                     <span>💧 {formatMeasurement(m.humidity, '%', 0)}</span>
                     <span>🌫️ PM2.5: {formatMeasurement(m.pm25, 'µg/m³')}</span>
-                    <span>🌬️ PM10: {formatMeasurement(m.pm10, 'µg/m³')}</span>
                     {m.windSpeed !== null && (
                       <span>💨 {formatMeasurement(m.windSpeed, 'm/s')}</span>
                     )}
                   </div>
 
                   <div className="mt-2 text-xs text-gray-400">
-                    Última leitura: {new Date(sensor.lastSeen).toLocaleString('pt-BR')}
+                    Última leitura: {formatFullDateTimeBRT(sensor.lastSeen)} (BRT)
                   </div>
                 </div>
               </Popup>

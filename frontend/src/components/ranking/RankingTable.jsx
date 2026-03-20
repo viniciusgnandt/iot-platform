@@ -20,6 +20,7 @@ export default function RankingTable({ cities = [], showDetails = false }) {
                 <th className="text-center py-3 px-4 text-xs uppercase tracking-wider text-gray-500 font-semibold hidden md:table-cell">Temp.</th>
                 <th className="text-center py-3 px-4 text-xs uppercase tracking-wider text-gray-500 font-semibold hidden md:table-cell">Umidade</th>
                 <th className="text-center py-3 px-4 text-xs uppercase tracking-wider text-gray-500 font-semibold hidden lg:table-cell">PM2.5</th>
+                <th className="text-center py-3 px-4 text-xs uppercase tracking-wider text-gray-500 font-semibold hidden lg:table-cell">Vento</th>
               </>
             )}
             <th className="text-center py-3 px-4 text-xs uppercase tracking-wider text-gray-500 font-semibold hidden sm:table-cell">Sensores</th>
@@ -31,6 +32,10 @@ export default function RankingTable({ cities = [], showDetails = false }) {
             const score = city.icaud?.score ?? null;
             const cls   = classify(score);
             const m     = city.measurements || {};
+
+            const sensorInfo = city.sensorList && city.sensorList.length > 0
+              ? city.sensorList.map(s => `${s.name} (${s.source})`).join('\n')
+              : '';
 
             return (
               <tr
@@ -86,13 +91,19 @@ export default function RankingTable({ cities = [], showDetails = false }) {
                     <td className="py-3 px-4 text-center font-mono text-gray-600 hidden lg:table-cell">
                       {formatMeasurement(m.pm25, 'µg/m³')}
                     </td>
+                    <td className="py-3 px-4 text-center font-mono text-gray-600 hidden lg:table-cell">
+                      {formatMeasurement(m.windSpeed, 'm/s')}
+                    </td>
                   </>
                 )}
 
                 {/* Sensor count */}
                 <td className="py-3 px-4 text-center hidden sm:table-cell">
-                  <span className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 font-mono">
-                    {city.sensorCount}
+                  <span
+                    title={sensorInfo ? `Sensores:\n${sensorInfo}` : ''}
+                    className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 font-mono font-semibold flex items-center justify-center gap-1 inline-flex cursor-help"
+                  >
+                    📡 {city.sensorCount}
                   </span>
                 </td>
               </tr>
