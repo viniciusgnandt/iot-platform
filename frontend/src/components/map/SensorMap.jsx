@@ -5,18 +5,24 @@ import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaf
 import { getMarkerColor, classify, formatMeasurement } from '../../utils/icaud.js';
 import { formatFullDateTimeBRT } from '../../utils/dateFormatter.js';
 import { ScoreBadge } from '../ui/index.jsx';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 // Fix Leaflet default icon issue with Vite
 import L from 'leaflet';
 delete L.Icon.Default.prototype._getIconUrl;
 
-/** Recenter the map when center prop changes */
-function MapController({ center, zoom }) {
+/** Fit map bounds to show all sensors, only on first load */
+function FitBounds({ sensors }) {
   const map = useMap();
+  const fitted = useRef(false);
   useEffect(() => {
-    if (center) map.setView(center, zoom);
-  }, [center, zoom, map]);
+    if (fitted.current || sensors.length === 0) return;
+    const bounds = sensors.map(s => [s.location.lat, s.location.lon]);
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+      fitted.current = true;
+    }
+  }, [sensors, map]);
   return null;
 }
 
@@ -32,7 +38,7 @@ export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253],
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom={true}
       >
-        <MapController center={center} zoom={zoom} />
+        <FitBounds sensors={sensors} />
 
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
@@ -74,14 +80,12 @@ export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253],
                     {/* Source badge */}
                     {sensor.source && (
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        sensor.source === 'opensensemap' ? 'bg-blue-100 text-blue-700' :
                         sensor.source === 'sensor_community' ? 'bg-green-100 text-green-700' :
-                        sensor.source === 'openweather' ? 'bg-orange-100 text-orange-700' :
+                        sensor.source === 'open_meteo' ? 'bg-orange-100 text-orange-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
-                        {sensor.source === 'opensensemap' ? '📦 OpenSenseMap' :
-                         sensor.source === 'sensor_community' ? '🌍 Sensor.Community' :
-                         sensor.source === 'openweather' ? '⛅ OpenWeather' :
+                        {sensor.source === 'sensor_community' ? '🌍 Sensor.Community' :
+                         sensor.source === 'open_meteo' ? '⛅ Open-Meteo' :
                          sensor.source}
                       </span>
                     )}

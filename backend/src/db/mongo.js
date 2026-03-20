@@ -19,6 +19,7 @@ try {
 // Models (null se mongoose não disponível)
 let SensorReading = null;
 let CacheEntry = null;
+let GeocodeEntry = null;
 
 if (isAvailable && mongoose) {
   const Schema = mongoose.Schema;
@@ -28,7 +29,7 @@ if (isAvailable && mongoose) {
   const sensorReadingSchema = new Schema(
     {
       sensorId: { type: String, required: true, index: true },
-      source: { type: String, enum: ['opensensemap', 'sensor_community', 'openweather', 'breezometer'], required: true },
+      source: { type: String, enum: ['sensor_community', 'open_meteo'], required: true },
       name: String,
       location: {
         lat: { type: Number, required: true },
@@ -71,9 +72,19 @@ if (isAvailable && mongoose) {
   // TTL index — auto-delete expired entries
   cacheEntrySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
+  // Schema para geocode cache (lat/lon → cidade)
+  const geocodeEntrySchema = new Schema(
+    {
+      key: { type: String, required: true, unique: true }, // "lat,lon" com 2 casas decimais
+      city: { type: String, default: null },
+    },
+    { timestamps: true }
+  );
+
   // Criar models
   SensorReading = model('SensorReading', sensorReadingSchema);
   CacheEntry = model('CacheEntry', cacheEntrySchema);
+  GeocodeEntry = model('GeocodeEntry', geocodeEntrySchema);
 }
 
 /**
@@ -293,4 +304,36 @@ export async function cleanupOldReadings(daysBack = 30) {
   }
 }
 
-export { SensorReading, CacheEntry };
+// ─── Geocode cache operations ─────────────────────────────────────────────
+export async function geocodeCacheGet(key) {
+  if (!isAvailable || !GeocodeEntry) return undefined;
+  try {
+    const entry = await GeocodeEntry.findOne({ key });
+    return entry ? entry.city : undefined;
+  } catch (err) {
+    logger.debug('geocodeCacheGet error:', err.message);
+    return undefined;
+  }
+}
+
+export async function geocodeCacheSet(key, city) {
+  if (!isAvailable || !GeocodeEntry) return;
+  try {
+    await GeocodeEntry.findOneAndUpdate(
+      { key },
+      { key, city },
+      { upsert: true }
+    );
+  } catch (err) {
+    logger.debug('geocodeCacheSet error:', err.message);
+  }
+}
+
+export async function geocodeCacheCount() {
+  if (!isAvailable || !GeocodeEntry) return 0;
+  try {
+    return await GeocodeEntry.countDocuments();
+  } catch { return 0; }
+}
+
+export { SensorReading, CacheEntry, GeocodeEntry };

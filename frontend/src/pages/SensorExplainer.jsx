@@ -1,7 +1,7 @@
 // src/pages/SensorExplainer.jsx
 // Comprehensive guide about sensors and types
 
-import { StatCard } from '../components/ui/index.jsx';
+// Comprehensive guide about sensors and types
 
 /** Sensor type card */
 function SensorTypeCard({ icon, name, model, description, measurements, manufacturer, cost }) {
@@ -133,7 +133,7 @@ export default function SensorExplainer() {
                 <h3 className="font-semibold text-gray-900 mb-2">3. Transmissão</h3>
                 <p className="text-gray-600">
                   Os dados são enviados via WiFi, GPRS, LoRaWAN ou outro protocolo de rede
-                  para um servidor na internet (OpenSenseMap, Sensor.Community, etc).
+                  para servidores na internet (Sensor.Community, Open-Meteo, etc).
                 </p>
               </div>
             </div>
@@ -337,8 +337,8 @@ export default function SensorExplainer() {
             <p className="text-sm text-gray-600 mb-3">
               Como montar seu próprio sensor e contribuir para monitoramento ambiental.
             </p>
-            <a href="https://participer.ecoconsciousness.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
-              Guia de DIY →
+            <a href="https://sensor.community/en/sensors/airrohr/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
+              Guia de montagem Sensor.Community →
             </a>
           </div>
         </div>
@@ -349,14 +349,14 @@ export default function SensorExplainer() {
         <h2 className="text-2xl font-bold text-gray-900 mb-3">Quer Contribuir?</h2>
         <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
           Se você tem interesse em monitoramento ambiental, considere instalar um sensor em sua região.
-          Qualquer pessoa pode criar uma senseBox ou sensor Luftdaten e contribuir com dados para a comunidade.
+          Qualquer pessoa pode montar um sensor Luftdaten/Sensor.Community e contribuir com dados para a comunidade global.
         </p>
         <div className="flex gap-3 justify-center flex-wrap">
-          <a href="https://opensensemap.org/add-kit" target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">
-            Criar uma senseBox
+          <a href="https://sensor.community/en/sensors/airrohr/" target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">
+            Montar um Sensor
           </a>
           <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
-            Instalar Sensor.Community
+            Conhecer o Sensor.Community
           </a>
         </div>
       </div>

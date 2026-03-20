@@ -19,6 +19,12 @@ export function useCities(params = {}) {
   return useQuery({
     queryKey: ['cities', params],
     queryFn:  () => api.getCities(params),
+    // Retry a cada 10s enquanto não houver cidades (warm-up do backend)
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data || data.count === 0) return 10_000;
+      return false;
+    },
     staleTime: STALE_TIME,
     select: res => res.data,
   });
@@ -31,7 +37,7 @@ export function useRanking(limit = 50) {
     // Retry a cada 10s enquanto o backend ainda está carregando (retorna 202)
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (data?.loading === true) return 10_000;
+      if (!data || data.loading === true || data.count === 0) return 10_000;
       return false;
     },
     staleTime: STALE_TIME,

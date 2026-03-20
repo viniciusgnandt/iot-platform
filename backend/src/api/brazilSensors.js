@@ -9,57 +9,57 @@ import { logger } from '../utils/logger.js';
 // ─── City lists ──────────────────────────────────────────────────────────────
 
 const BRAZIL_CITIES = [
-  { name: 'São Paulo', lat: -23.5505, lon: -46.6333 },
-  { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729 },
-  { name: 'Belo Horizonte', lat: -19.9191, lon: -43.9386 },
-  { name: 'Brasília', lat: -15.7942, lon: -47.8822 },
-  { name: 'Salvador', lat: -12.9714, lon: -38.5014 },
-  { name: 'Fortaleza', lat: -3.7319, lon: -38.5267 },
-  { name: 'Recife', lat: -8.0726, lon: -34.8759 },
-  { name: 'Manaus', lat: -3.1190, lon: -60.0217 },
-  { name: 'Curitiba', lat: -25.4284, lon: -49.2733 },
-  { name: 'Porto Alegre', lat: -30.0346, lon: -51.2177 },
-  { name: 'Goiânia', lat: -15.8267, lon: -48.9385 },
-  { name: 'Campinas', lat: -22.9068, lon: -47.0707 },
-  { name: 'Guarulhos', lat: -23.4613, lon: -46.4734 },
-  { name: 'Teresina', lat: -5.0892, lon: -42.8084 },
-  { name: 'João Pessoa', lat: -7.1219, lon: -34.8450 },
-  { name: 'Natal', lat: -5.7942, lon: -35.2110 },
-  { name: 'Belém', lat: -1.4554, lon: -48.5034 },
-  { name: 'Maceió', lat: -9.6498, lon: -35.7348 },
+  { name: 'São Paulo', lat: -23.5505, lon: -46.6333, country: 'BR' },
+  { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729, country: 'BR' },
+  { name: 'Belo Horizonte', lat: -19.9191, lon: -43.9386, country: 'BR' },
+  { name: 'Brasília', lat: -15.7942, lon: -47.8822, country: 'BR' },
+  { name: 'Salvador', lat: -12.9714, lon: -38.5014, country: 'BR' },
+  { name: 'Fortaleza', lat: -3.7319, lon: -38.5267, country: 'BR' },
+  { name: 'Recife', lat: -8.0726, lon: -34.8759, country: 'BR' },
+  { name: 'Manaus', lat: -3.1190, lon: -60.0217, country: 'BR' },
+  { name: 'Curitiba', lat: -25.4284, lon: -49.2733, country: 'BR' },
+  { name: 'Porto Alegre', lat: -30.0346, lon: -51.2177, country: 'BR' },
+  { name: 'Goiânia', lat: -15.8267, lon: -48.9385, country: 'BR' },
+  { name: 'Campinas', lat: -22.9068, lon: -47.0707, country: 'BR' },
+  { name: 'Guarulhos', lat: -23.4613, lon: -46.4734, country: 'BR' },
+  { name: 'Teresina', lat: -5.0892, lon: -42.8084, country: 'BR' },
+  { name: 'João Pessoa', lat: -7.1219, lon: -34.8450, country: 'BR' },
+  { name: 'Natal', lat: -5.7942, lon: -35.2110, country: 'BR' },
+  { name: 'Belém', lat: -1.4554, lon: -48.5034, country: 'BR' },
+  { name: 'Maceió', lat: -9.6498, lon: -35.7348, country: 'BR' },
 ];
 
 const EUROPE_CITIES = [
-  { name: 'Berlin', lat: 52.52, lon: 13.405 },
-  { name: 'London', lat: 51.507, lon: -0.127 },
-  { name: 'Paris', lat: 48.856, lon: 2.352 },
-  { name: 'Madrid', lat: 40.416, lon: -3.703 },
-  { name: 'Rome', lat: 41.902, lon: 12.496 },
-  { name: 'Amsterdam', lat: 52.374, lon: 4.899 },
-  { name: 'Vienna', lat: 48.208, lon: 16.372 },
-  { name: 'Warsaw', lat: 52.229, lon: 21.012 },
-  { name: 'Prague', lat: 50.075, lon: 14.437 },
-  { name: 'Budapest', lat: 47.497, lon: 19.040 },
-  { name: 'Munich', lat: 48.135, lon: 11.582 },
-  { name: 'Hamburg', lat: 53.551, lon: 9.993 },
-  { name: 'Stuttgart', lat: 48.775, lon: 9.182 },
-  { name: 'Cologne', lat: 50.937, lon: 6.960 },
-  { name: 'Brussels', lat: 50.850, lon: 4.351 },
-  { name: 'Zurich', lat: 47.376, lon: 8.541 },
-  { name: 'Copenhagen', lat: 55.676, lon: 12.568 },
-  { name: 'Stockholm', lat: 59.329, lon: 18.068 },
-  { name: 'Oslo', lat: 59.913, lon: 10.752 },
-  { name: 'Helsinki', lat: 60.169, lon: 24.938 },
-  { name: 'Lisbon', lat: 38.722, lon: -9.139 },
-  { name: 'Barcelona', lat: 41.389, lon: 2.159 },
-  { name: 'Milan', lat: 45.464, lon: 9.190 },
-  { name: 'Athens', lat: 37.984, lon: 23.728 },
-  { name: 'Dublin', lat: 53.349, lon: -6.260 },
-  { name: 'Bucharest', lat: 44.426, lon: 26.102 },
-  { name: 'Sofia', lat: 42.697, lon: 23.322 },
-  { name: 'Zagreb', lat: 45.815, lon: 15.982 },
-  { name: 'Belgrade', lat: 44.787, lon: 20.457 },
-  { name: 'Kraków', lat: 50.065, lon: 19.945 },
+  { name: 'Berlin', lat: 52.52, lon: 13.405, country: 'DE' },
+  { name: 'London', lat: 51.507, lon: -0.127, country: 'GB' },
+  { name: 'Paris', lat: 48.856, lon: 2.352, country: 'FR' },
+  { name: 'Madrid', lat: 40.416, lon: -3.703, country: 'ES' },
+  { name: 'Rome', lat: 41.902, lon: 12.496, country: 'IT' },
+  { name: 'Amsterdam', lat: 52.374, lon: 4.899, country: 'NL' },
+  { name: 'Vienna', lat: 48.208, lon: 16.372, country: 'AT' },
+  { name: 'Warsaw', lat: 52.229, lon: 21.012, country: 'PL' },
+  { name: 'Prague', lat: 50.075, lon: 14.437, country: 'CZ' },
+  { name: 'Budapest', lat: 47.497, lon: 19.040, country: 'HU' },
+  { name: 'Munich', lat: 48.135, lon: 11.582, country: 'DE' },
+  { name: 'Hamburg', lat: 53.551, lon: 9.993, country: 'DE' },
+  { name: 'Stuttgart', lat: 48.775, lon: 9.182, country: 'DE' },
+  { name: 'Cologne', lat: 50.937, lon: 6.960, country: 'DE' },
+  { name: 'Brussels', lat: 50.850, lon: 4.351, country: 'BE' },
+  { name: 'Zurich', lat: 47.376, lon: 8.541, country: 'CH' },
+  { name: 'Copenhagen', lat: 55.676, lon: 12.568, country: 'DK' },
+  { name: 'Stockholm', lat: 59.329, lon: 18.068, country: 'SE' },
+  { name: 'Oslo', lat: 59.913, lon: 10.752, country: 'NO' },
+  { name: 'Helsinki', lat: 60.169, lon: 24.938, country: 'FI' },
+  { name: 'Lisbon', lat: 38.722, lon: -9.139, country: 'PT' },
+  { name: 'Barcelona', lat: 41.389, lon: 2.159, country: 'ES' },
+  { name: 'Milan', lat: 45.464, lon: 9.190, country: 'IT' },
+  { name: 'Athens', lat: 37.984, lon: 23.728, country: 'GR' },
+  { name: 'Dublin', lat: 53.349, lon: -6.260, country: 'IE' },
+  { name: 'Bucharest', lat: 44.426, lon: 26.102, country: 'RO' },
+  { name: 'Sofia', lat: 42.697, lon: 23.322, country: 'BG' },
+  { name: 'Zagreb', lat: 45.815, lon: 15.982, country: 'HR' },
+  { name: 'Belgrade', lat: 44.787, lon: 20.457, country: 'RS' },
+  { name: 'Kraków', lat: 50.065, lon: 19.945, country: 'PL' },
 ];
 
 const ALL_CITIES = [...BRAZIL_CITIES, ...EUROPE_CITIES];
@@ -97,7 +97,7 @@ async function fetchOpenMeteo(cities, tag = '') {
       if (!current) continue;
 
       const city = cities[i];
-      const country = BRAZIL_CITIES.includes(city) ? 'Brazil' : city.name;
+      const country = city.country;
 
       sensors.push(createSensor({
         id:          `openmeteo_${city.name.toLowerCase().replace(/\s/g, '_')}`,
@@ -135,7 +135,7 @@ async function fetchOpenMeteo(cities, tag = '') {
         const current = response.data?.current;
         if (!current) continue;
 
-        const country = BRAZIL_CITIES.includes(city) ? 'Brazil' : city.name;
+        const country = city.country;
         sensors.push(createSensor({
           id:          `openmeteo_${city.name.toLowerCase().replace(/\s/g, '_')}`,
           source:      'open_meteo',

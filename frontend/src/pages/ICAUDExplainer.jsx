@@ -193,7 +193,7 @@ export default function ICAUDExplainer() {
                   <h4 className="font-semibold text-gray-900">Agregação por Cidade</h4>
                   <p className="text-sm text-gray-600 mt-1">
                     Sensores agrupados por cidade via reverse geocoding (Nominatim). Calcula-se
-                    média de medições e ICAU-D agregado. Cache de geocode em SQLite evita re-requisições.
+                    média de medições e ICAU-D agregado. Cache de geocode em MongoDB evita re-requisições.
                   </p>
                 </div>
               </div>
@@ -201,10 +201,10 @@ export default function ICAUDExplainer() {
               <div className="flex gap-4 items-start">
                 <div className="flex-shrink-0 w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center text-lg font-bold text-cyan-600">5</div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">Cache Distribuído</h4>
+                  <h4 className="font-semibold text-gray-900">Cache em MongoDB</h4>
                   <p className="text-sm text-gray-600 mt-1">
-                    Dados cachados em Redis (5-10 min de TTL). Fallback em memória com padrão
-                    stale-while-revalidate. Reduz drasticamente carga nas APIs externas.
+                    Dados cachados em MongoDB (5-10 min de TTL) com padrão stale-while-revalidate.
+                    Reduz drasticamente carga nas APIs externas.
                   </p>
                 </div>
               </div>
@@ -227,44 +227,48 @@ export default function ICAUDExplainer() {
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Diagrama Técnico</h3>
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 font-mono text-xs text-gray-700 overflow-x-auto">
               <pre>{`
-┌──────────────────────────────────────────────────────────────┐
-│                   FRONTEND (React)                            │
-│    Dashboard | Mapa | Ranking | Sensores | Como Funciona    │
-│              http://localhost:5174                            │
-└────────────────────────┬─────────────────────────────────────┘
-                         │ HTTP/JSON
-                         ▼
-┌──────────────────────────────────────────────────────────────┐
-│              BACKEND (Node.js / Express)                      │
-│             http://localhost:3002/api                         │
-├──────────────────────────────────────────────────────────────┤
-│  ┌──────────────────┐  ┌────────────────┐                   │
-│  │Sensor.Community  │  │  Open-Meteo    │                   │
-│  │ (PM2.5, Temp,    │  │ (Temp, Umidade,│                   │
-│  │  Umidade)        │  │  Vento)        │                   │
-│  └────┬─────────────┘  └────┬───────────┘                   │
-│       │                      │                               │
-│       └──────────┬───────────┘                               │
-│                  │                                            │
-│     ┌────────────▼─────────────┐                             │
-│     │ Normalize & Validate     │                             │
-│     │ ICAU-D (dynamic weights) │                             │
-│     └────────────┬─────────────┘                             │
-│                  │                                            │
-│     ┌────────────▼─────────────┐                             │
-│     │ Aggregate by City        │                             │
-│     │ (Nominatim geocoding)    │                             │
-│     └────────────┬─────────────┘                             │
-│                  │                                            │
-│       ┌──────────┼──────────┐                                │
-│       ▼          ▼          ▼                                │
-│  ┌────────┐ ┌────────┐ ┌────────┐                           │
-│  │MongoDB │ │ Cache  │ │SQLite  │                           │
-│  │        │ │(Memory)│ │ (Geo)  │                           │
-│  └────────┘ └────────┘ └────────┘                           │
-│ (Histórico  (5-10 min  (Reverse                             │
-│  30 dias)    TTL)       Geocode)                             │
-└──────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                    FRONTEND (React + Vite)                 │
+│   Dashboard | Mapa | Ranking | Sensores | Como Funciona   │
+│            Nginx (produção) / Vite (dev)                  │
+└───────────────────────┬───────────────────────────────────┘
+                        │ HTTP/JSON (/api)
+                        ▼
+┌───────────────────────────────────────────────────────────┐
+│               BACKEND (Node.js / Express)                 │
+├───────────────────────────────────────────────────────────┤
+│                                                           │
+│  ┌─────────────────┐    ┌─────────────────┐              │
+│  │ Sensor.Community │    │   Open-Meteo    │              │
+│  │ PM2.5, PM10,     │    │ Temp, Umidade,  │              │
+│  │ Temp, Umidade    │    │ Vento           │              │
+│  └────────┬────────┘    └────────┬────────┘              │
+│           │                      │                        │
+│           └──────────┬───────────┘                        │
+│                      ▼                                    │
+│         ┌─────────────────────────┐                       │
+│         │  Normalização + ICAU-D  │                       │
+│         │  (pesos dinâmicos)      │                       │
+│         └────────────┬────────────┘                       │
+│                      ▼                                    │
+│         ┌─────────────────────────┐                       │
+│         │  Agregação por Cidade   │                       │
+│         │  (Nominatim geocoding)  │                       │
+│         └────────────┬────────────┘                       │
+│                      │                                    │
+│           ┌──────────┴──────────┐                         │
+│           ▼                     ▼                         │
+│    ┌─────────────┐       ┌───────────┐                    │
+│    │  MongoDB    │       │  MongoDB   │                    │
+│    │  Atlas      │       │  (Geo     │                    │
+│    │  (Cloud)    │       │   Cache)  │                    │
+│    ├─────────────┤       └───────────┘                    │
+│    │ • Histórico │       Nominatim                        │
+│    │   30 dias   │       1 req/s                          │
+│    │ • Cache TTL │                                        │
+│    │   5-10 min  │                                        │
+│    └─────────────┘                                        │
+└───────────────────────────────────────────────────────────┘
               `}</pre>
             </div>
           </div>
@@ -272,50 +276,16 @@ export default function ICAUDExplainer() {
           {/* Armazenamento de Dados */}
           <div>
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Onde os Dados são Armazenados?</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white border border-gray-100 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">📦 MongoDB</h4>
-                <p className="text-sm text-gray-600 mb-3"><strong>Banco principal (persistente)</strong></p>
-                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                  <li>Histórico de leituras (até 30 dias)</li>
-                  <li>Auto-expiração via TTL index</li>
-                  <li>Queries por sensor/tempo/localização</li>
-                  <li>Escalável e distribuído</li>
-                </ul>
-              </div>
-
-              <div className="bg-white border border-gray-100 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">⚡ Redis</h4>
-                <p className="text-sm text-gray-600 mb-3"><strong>Cache distribuído (rápido)</strong></p>
-                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                  <li>Cache de sensores (5 min TTL)</li>
-                  <li>Cache de cidades (10 min TTL)</li>
-                  <li>Cache de ranking (10 min TTL)</li>
-                  <li>Reduz requisições às APIs</li>
-                </ul>
-              </div>
-
-              <div className="bg-white border border-gray-100 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">🗂️ SQLite</h4>
-                <p className="text-sm text-gray-600 mb-3"><strong>Cache local (persistente)</strong></p>
-                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                  <li>Geocode cache (lat/lon → cidade)</li>
-                  <li>Persiste entre restarts</li>
-                  <li>Limite: 5 GB</li>
-                  <li>Evita chamadas ao Nominatim</li>
-                </ul>
-              </div>
-
-              <div className="bg-white border border-gray-100 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">💾 Memória (In-process)</h4>
-                <p className="text-sm text-gray-600 mb-3"><strong>Cache em tempo real (muito rápido)</strong></p>
-                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                  <li>Dados mais recentes em RAM</li>
-                  <li>Padrão: stale-while-revalidate</li>
-                  <li>TTLs configuráveis</li>
-                  <li>Fallback quando Redis/Mongo indisponíveis</li>
-                </ul>
-              </div>
+            <div className="bg-white border border-gray-100 rounded-lg p-4 max-w-lg">
+              <h4 className="font-semibold text-gray-900 mb-2">📦 MongoDB Atlas</h4>
+              <p className="text-sm text-gray-600 mb-3"><strong>Armazenamento único e centralizado</strong></p>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                <li>Histórico de leituras (até 30 dias, TTL index)</li>
+                <li>Cache de dados com TTL (sensores, cidades, ranking)</li>
+                <li>Cache de geocoding (lat/lon → cidade)</li>
+                <li>Padrão stale-while-revalidate</li>
+                <li>Escalável e distribuído na nuvem</li>
+              </ul>
             </div>
           </div>
 
@@ -357,7 +327,7 @@ export default function ICAUDExplainer() {
                 <div className="text-xs text-gray-600 space-y-1">
                   <div><strong>Cobertura:</strong> Global</div>
                   <div><strong>Rate limit:</strong> 1 req/s</div>
-                  <div><strong>Cache:</strong> Local em SQLite</div>
+                  <div><strong>Cache:</strong> MongoDB Atlas</div>
                   <div><strong>URL:</strong> nominatim.openstreetmap.org</div>
                 </div>
               </div>
@@ -617,8 +587,8 @@ export default function ICAUDExplainer() {
           {/* Introdução */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
             <p className="text-gray-600 mb-3">
-              EcoSense integra dados de múltiplas fontes públicas para fornecer a cobertura mais abrangente possível
-              de sensores ambientais e dados meteorológicos em todo o Brasil e globalmente.
+              EcoSense integra dados de 2 fontes públicas gratuitas: <strong>Sensor.Community</strong> (qualidade do ar)
+              e <strong>Open-Meteo</strong> (meteorologia), cobrindo cidades do Brasil e da Europa.
             </p>
             <p className="text-gray-600 text-sm">
               Todas as fontes são públicas e livres para uso. Nenhuma informação pessoal é coletada ou armazenada.
@@ -696,7 +666,7 @@ export default function ICAUDExplainer() {
               <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
                 <div><strong>Cobertura:</strong> Global</div>
                 <div><strong>Rate Limit:</strong> 1 req/segundo</div>
-                <div><strong>Cache:</strong> Local em SQLite</div>
+                <div><strong>Cache:</strong> MongoDB Atlas</div>
                 <div><strong>Autenticação:</strong> Não requerida</div>
               </div>
               <div className="mt-3 pt-3 border-t border-gray-200">
@@ -721,7 +691,7 @@ export default function ICAUDExplainer() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold w-32">Geocoding:</span>
-                <span>Nominatim com cache local em SQLite</span>
+                <span>Nominatim com cache no MongoDB Atlas</span>
               </div>
               <div className="mt-3 pt-3 border-t border-blue-200">
                 <p className="text-xs text-gray-600">

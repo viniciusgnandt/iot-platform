@@ -1,23 +1,76 @@
 // src/pages/Ranking.jsx
 // Full city ranking page with filtering
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRanking } from '../hooks/useEnvironmentalData.js';
 import { Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import RankingTable from '../components/ranking/RankingTable.jsx';
 import { CLASSIFICATIONS } from '../utils/icaud.js';
 
+// Mapeamento país → continente
+const COUNTRY_CONTINENT = {
+  BR: 'América do Sul',
+  DE: 'Europa', GB: 'Europa', FR: 'Europa', ES: 'Europa', IT: 'Europa',
+  NL: 'Europa', AT: 'Europa', PL: 'Europa', CZ: 'Europa', HU: 'Europa',
+  BE: 'Europa', CH: 'Europa', DK: 'Europa', SE: 'Europa', NO: 'Europa',
+  FI: 'Europa', PT: 'Europa', GR: 'Europa', IE: 'Europa', RO: 'Europa',
+  BG: 'Europa', HR: 'Europa', RS: 'Europa', MK: 'Europa', BA: 'Europa',
+  SK: 'Europa', SI: 'Europa', LT: 'Europa', LV: 'Europa', EE: 'Europa',
+  RU: 'Europa', UA: 'Europa', BY: 'Europa', AM: 'Europa',
+};
+
+// Nomes legíveis dos países
+const COUNTRY_NAMES = {
+  BR: 'Brasil', DE: 'Alemanha', GB: 'Reino Unido', FR: 'França',
+  ES: 'Espanha', IT: 'Itália', NL: 'Holanda', AT: 'Áustria',
+  PL: 'Polônia', CZ: 'Tchéquia', HU: 'Hungria', BE: 'Bélgica',
+  CH: 'Suíça', DK: 'Dinamarca', SE: 'Suécia', NO: 'Noruega',
+  FI: 'Finlândia', PT: 'Portugal', GR: 'Grécia', IE: 'Irlanda',
+  RO: 'Romênia', BG: 'Bulgária', HR: 'Croácia', RS: 'Sérvia',
+  MK: 'Macedônia do Norte', RU: 'Rússia', UA: 'Ucrânia', AM: 'Armênia',
+};
+
+function getContinent(country) {
+  return COUNTRY_CONTINENT[country] || 'Outros';
+}
+
 export default function Ranking() {
-  const [limit, setLimit]        = useState(50);
-  const [filterClass, setFilter]  = useState('');
+  const [limit, setLimit]              = useState(50);
+  const [filterClass, setFilter]       = useState('');
+  const [filterContinent, setContinent] = useState('');
+  const [filterCountry, setCountry]    = useState('');
   const { data: rankingRes, isLoading, refetch } = useRanking(limit);
 
   const cities         = rankingRes?.data    || [];
   const isLoadingData  = isLoading || rankingRes?.loading;
 
-  const filtered = filterClass
-    ? cities.filter(c => c.icaud?.classification?.label === filterClass)
-    : cities;
+  // Extrair continentes e países disponíveis
+  const { continents, countriesInContinent } = useMemo(() => {
+    const continentSet = new Set();
+    const countrySet = new Set();
+    for (const c of cities) {
+      const code = c.country;
+      if (code) {
+        continentSet.add(getContinent(code));
+        countrySet.add(code);
+      }
+    }
+    const continents = [...continentSet].sort();
+
+    // Países filtrados pelo continente selecionado
+    const countriesInContinent = [...countrySet]
+      .filter(code => !filterContinent || getContinent(code) === filterContinent)
+      .sort((a, b) => (COUNTRY_NAMES[a] || a).localeCompare(COUNTRY_NAMES[b] || b));
+
+    return { continents, countriesInContinent };
+  }, [cities, filterContinent]);
+
+  const filtered = cities.filter(c => {
+    if (filterClass && c.icaud?.classification?.label !== filterClass) return false;
+    if (filterContinent && getContinent(c.country) !== filterContinent) return false;
+    if (filterCountry && c.country !== filterCountry) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -47,6 +100,28 @@ export default function Ranking() {
           <option value={25}>Top 25</option>
           <option value={50}>Top 50</option>
           <option value={100}>Top 100</option>
+        </select>
+
+        <select
+          value={filterContinent}
+          onChange={e => { setContinent(e.target.value); setCountry(''); }}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="">Todos os continentes</option>
+          {continents.map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+
+        <select
+          value={filterCountry}
+          onChange={e => setCountry(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="">Todos os países</option>
+          {countriesInContinent.map(code => (
+            <option key={code} value={code}>{COUNTRY_NAMES[code] || code}</option>
+          ))}
         </select>
 
         <select

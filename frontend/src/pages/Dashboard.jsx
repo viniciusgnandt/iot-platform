@@ -122,12 +122,26 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
           <h2 className="text-base font-semibold text-gray-800 mb-4">🏙️ Top Cidades por ICAU-D</h2>
-          {citiesLoading ? <Spinner /> : <TopCitiesChart cities={ranking} />}
+          {(rankingLoading || rankingLoading2 || ranking.length === 0) ? (
+            <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 gap-2">
+              <div className="animate-spin text-3xl">⚙️</div>
+              <p className="text-sm">Carregando ranking…</p>
+            </div>
+          ) : (
+            <TopCitiesChart cities={ranking} />
+          )}
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
           <h2 className="text-base font-semibold text-gray-800 mb-4">📊 Distribuição por Classificação</h2>
-          {citiesLoading ? <Spinner /> : <ClassificationDonut cities={cities} />}
+          {(citiesLoading || cities.length === 0) ? (
+            <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 gap-2">
+              <div className="animate-spin text-3xl">⚙️</div>
+              <p className="text-sm">Carregando cidades…</p>
+            </div>
+          ) : (
+            <ClassificationDonut cities={cities} />
+          )}
         </div>
       </div>
 
