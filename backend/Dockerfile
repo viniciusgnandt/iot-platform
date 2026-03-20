@@ -18,11 +18,11 @@ RUN npm ci --prefer-offline --no-audit --only=production || npm install --only=p
 COPY src ./src
 
 # Expose port
-EXPOSE 3001
+EXPOSE 3002
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/api/sensors', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD node -e "require('http').get('http://localhost:3002/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 # Start application
 CMD ["node", "src/index.js"]
