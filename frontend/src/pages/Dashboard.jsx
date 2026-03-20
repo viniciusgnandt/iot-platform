@@ -3,7 +3,7 @@
 
 import { Suspense, lazy, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSensors, useRanking, useCities } from '../hooks/useEnvironmentalData.js';
+import { useSensors, useSensorsHistory, useRanking, useCities } from '../hooks/useEnvironmentalData.js';
 import { StatCard, ScoreRing, Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import RankingTable from '../components/ranking/RankingTable.jsx';
 import { TopCitiesChart, ClassificationDonut } from '../components/charts/EnvironmentalChart.jsx';
@@ -40,13 +40,18 @@ function GlobalStats({ cities = [], sensors = [] }) {
 export default function Dashboard() {
   const [timePeriod, setTimePeriod] = useState('live');
 
-  const { data: sensors = [], isLoading: sensorsLoading, error: sensorsError } = useSensors({ limit: 500 });
+  const { data: liveSensors = [], isLoading: sensorsLoading, error: sensorsError } = useSensors({ limit: 500 });
+  const { data: historySensors = [], isLoading: historyLoading } = useSensorsHistory(timePeriod);
   const { data: rankingRes,   isLoading: rankingLoading  } = useRanking(10);
   const { data: cities  = [], isLoading: citiesLoading  } = useCities();
 
+  // Use historical data when period is not live
+  const sensors = timePeriod === 'live' ? liveSensors : (historySensors.length > 0 ? historySensors : liveSensors);
+  const isHistoryMode = timePeriod !== 'live';
+
   const ranking        = rankingRes?.data    || [];
   const rankingLoading2 = rankingLoading || rankingRes?.loading;
-  const isLoading      = sensorsLoading || rankingLoading;
+  const isLoading      = sensorsLoading || rankingLoading || (isHistoryMode && historyLoading);
 
   // Calculate global average ICAU-D
   const validCities  = cities.filter(c => c.icaud?.score !== null);
@@ -61,7 +66,10 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Painel Ambiental</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Índice de Conforto Urbano em tempo real de {sensors.length} sensores ativos em {cities.length} cidades
+            {timePeriod === 'live'
+              ? `Índice de Conforto Urbano em tempo real de ${sensors.length} sensores ativos em ${cities.length} cidades`
+              : `Médias históricas (${timePeriod === 'week' ? '7 dias' : '30 dias'}) de ${sensors.length} sensores em ${cities.length} cidades`
+            }
           </p>
         </div>
         <div className="flex-shrink-0">
@@ -110,9 +118,11 @@ export default function Dashboard() {
 
       {/* Mapa */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-3">🗺️ Mapa de Sensores ao Vivo</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-3">
+          🗺️ {timePeriod === 'live' ? 'Mapa de Sensores ao Vivo' : `Mapa de Sensores — Média ${timePeriod === 'week' ? '7 dias' : '30 dias'}`}
+        </h2>
         <Suspense fallback={<Spinner />}>
-          {!sensorsLoading && (
+          {!(sensorsLoading || (isHistoryMode && historyLoading)) && (
             <SensorMap sensors={sensors} height="450px" />
           )}
         </Suspense>

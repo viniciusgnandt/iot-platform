@@ -55,6 +55,16 @@ export function useCity(name) {
   });
 }
 
+export function useSensorsHistory(period) {
+  return useQuery({
+    queryKey: ['sensors-history', period],
+    queryFn:  () => api.getSensorsHistory(period),
+    staleTime: STALE_TIME,
+    enabled: period === 'week' || period === 'month',
+    select: res => res.data,
+  });
+}
+
 export function useICAUD(lat, lon) {
   return useQuery({
     queryKey: ['icaud', lat, lon],

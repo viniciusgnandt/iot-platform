@@ -11,7 +11,7 @@ import { logger } from '../utils/logger.js';
 export async function getSensors(req, res) {
   try {
     const { source, minScore, limit = 500 } = req.query;
-    let sensors = await getAllSensors();
+    let sensors = await getAllSensors() || [];
 
     if (source) {
       sensors = sensors.filter(s => s.source === source);

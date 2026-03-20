@@ -45,6 +45,20 @@ router.get('/debug', async (req, res) => {
 
 // Sensor routes
 router.get('/sensors', getSensors);
+router.get('/sensors/history', async (req, res) => {
+  try {
+    const { period = 'week' } = req.query;
+    const hoursBack = period === 'month' ? 720 : 168; // 30 days or 7 days
+    const { getHistoricalSensorStats } = await import('./db/mongo.js');
+    const data = await getHistoricalSensorStats(hoursBack);
+    if (!data) {
+      return res.json({ success: true, count: 0, data: [], period });
+    }
+    res.json({ success: true, count: data.length, data, period });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch historical data' });
+  }
+});
 router.get('/icau',    getICAUD);
 
 // City routes (order matters: /ranking before /:city)

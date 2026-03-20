@@ -41,6 +41,10 @@ export const api = {
   getICAUD: (lat, lon) =>
     client.get('/icau', { params: { lat, lon } }),
 
+  /** Get historical sensor averages */
+  getSensorsHistory: (period = 'week') =>
+    client.get('/sensors/history', { params: { period } }),
+
   /** Health check */
   health: () =>
     client.get('/health'),

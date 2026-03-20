@@ -14,7 +14,7 @@ export function useBackendHealth() {
     const checkHealth = async () => {
       setIsChecking(true);
       try {
-        const response = await fetch('/api/sensors?limit=1', {
+        const response = await fetch('/api/health', {
           method: 'GET',
           signal: AbortSignal.timeout(5000), // 5s timeout
         });

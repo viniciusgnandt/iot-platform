@@ -116,7 +116,7 @@ class CacheManager {
       return fresh;
     } catch (err) {
       logger.warn(`getOrSet erro ao buscar ${key}: ${err.message}`);
-      throw err;
+      return null;
     }
   }
 

@@ -65,7 +65,7 @@ export default function Layout({ children }) {
       <footer className="border-t border-gray-100 bg-white mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>EcoSense Plataforma IoT — Dados ambientais de OpenSenseMap & Sensor.Community</span>
+            <span>EcoSense Plataforma IoT — Dados ambientais de Sensor.Community & Open-Meteo</span>
             <span>Índice ICAU-D</span>
           </div>
         </div>

@@ -304,6 +304,63 @@ export async function cleanupOldReadings(daysBack = 30) {
   }
 }
 
+/**
+ * Get aggregated sensor stats for a time period (historical averages from MongoDB)
+ */
+export async function getHistoricalSensorStats(hoursBack = 168) {
+  if (!isAvailable || !SensorReading) return null;
+
+  try {
+    const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+    const results = await SensorReading.aggregate([
+      { $match: { recordedAt: { $gte: since } } },
+      {
+        $group: {
+          _id: '$sensorId',
+          name: { $last: '$name' },
+          source: { $last: '$source' },
+          lat: { $last: '$location.lat' },
+          lon: { $last: '$location.lon' },
+          city: { $last: '$location.city' },
+          country: { $last: '$location.country' },
+          avgTemperature: { $avg: '$measurements.temperature' },
+          avgHumidity: { $avg: '$measurements.humidity' },
+          avgPm25: { $avg: '$measurements.pm25' },
+          avgWindSpeed: { $avg: '$measurements.windSpeed' },
+          avgScore: { $avg: '$icaud.score' },
+          readingCount: { $sum: 1 },
+          lastSeen: { $max: '$recordedAt' },
+          deviceType: { $last: '$deviceType' },
+          exposure: { $last: '$exposure' },
+          sensorCount: { $last: '$sensorCount' },
+        },
+      },
+    ]);
+
+    return results.map(r => ({
+      id: r._id,
+      name: r.name,
+      source: r.source,
+      location: { lat: r.lat, lon: r.lon, city: r.city, country: r.country },
+      measurements: {
+        temperature: r.avgTemperature,
+        humidity: r.avgHumidity,
+        pm25: r.avgPm25,
+        windSpeed: r.avgWindSpeed,
+      },
+      icaud: { score: r.avgScore, classification: null },
+      deviceType: r.deviceType,
+      exposure: r.exposure,
+      sensorCount: r.sensorCount,
+      lastSeen: r.lastSeen,
+      readingCount: r.readingCount,
+    }));
+  } catch (err) {
+    logger.debug('getHistoricalSensorStats error:', err.message);
+    return null;
+  }
+}
+
 // ─── Geocode cache operations ─────────────────────────────────────────────
 export async function geocodeCacheGet(key) {
   if (!isAvailable || !GeocodeEntry) return undefined;
