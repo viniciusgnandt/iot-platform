@@ -44,12 +44,4 @@ export const config = {
     mongoEnabled: process.env.MONGO_ENABLED === 'true',
     mongoTimeout: 5000,
   },
-
-  cache: {
-    ttlSensors: parseInt(process.env.CACHE_TTL_SENSORS || '300', 10),
-    ttlCities: parseInt(process.env.CACHE_TTL_CITIES || '600', 10),
-    ttlRanking: parseInt(process.env.CACHE_TTL_RANKING || '600', 10),
-    redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
-    redisEnabled: process.env.REDIS_ENABLED === 'true',
-  },
 };

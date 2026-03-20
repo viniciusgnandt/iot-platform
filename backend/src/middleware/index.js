@@ -52,12 +52,10 @@ export const requestLogger = morgan(
  */
 export function addCacheStatsRoute(app) {
   app.get('/cache-stats', async (req, res) => {
-    const { diskStats } = await import('../utils/persistentCache.js');
     res.json({
       success: true,
       data: {
-        memory: cache.stats(),
-        disk:   diskStats(),
+        cache: cache.getStats(),
       },
     });
   });

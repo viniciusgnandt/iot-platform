@@ -1,41 +1,7 @@
 version: '3.8'
 
 services:
-  # MongoDB — persistent data store (internal only)
-  mongo:
-    image: mongo:7
-    container_name: iot_mongo
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_DATABASE: iot_platform
-    volumes:
-      - mongo_data:/data/db
-      - mongo_config:/data/configdb
-    networks:
-      - iot_network
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Redis — distributed cache (internal only)
-  redis:
-    image: redis:7-alpine
-    container_name: iot_redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_data:/data
-    networks:
-      - iot_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Backend API (internal only - no ports exposed)
+  # Backend API
   backend:
     build:
       context: ./backend
@@ -46,10 +12,8 @@ services:
       NODE_ENV: production
       PORT: 3001
       CORS_ORIGIN: http://localhost
-      MONGO_URI: mongodb://mongo:27017/iot_platform
+      MONGO_URI: mongodb+srv://viniciusgnandt_db_user:kk3KyRKh0ppv8j0S@univesp-pi-5.akx42mw.mongodb.net/?appName=univesp-pi-5
       MONGO_ENABLED: "true"
-      REDIS_URL: redis://redis:6379
-      REDIS_ENABLED: "true"
       CACHE_TTL_SENSORS: 300
       CACHE_TTL_CITIES: 600
       CACHE_TTL_RANKING: 600
@@ -61,11 +25,6 @@ services:
       OPENWEATHER_API_KEY: ""
       MAX_SENSORS_PER_SOURCE: 200
       SENSOR_MAX_AGE_HOURS: 2
-    depends_on:
-      mongo:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
       - iot_network
     healthcheck:
@@ -92,14 +51,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-volumes:
-  mongo_data:
-    driver: local
-  mongo_config:
-    driver: local
-  redis_data:
-    driver: local
 
 networks:
   iot_network:

@@ -15,7 +15,7 @@ import {
 } from './middleware/index.js';
 import { logger } from './utils/logger.js';
 import { connectMongo, saveSensorReadingsBatch } from './db/mongo.js';
-import { initRedis } from './utils/redisCache.js';
+import { setMongoCache } from './utils/cache.js';
 
 const app = express();
 
@@ -41,16 +41,17 @@ const server = app.listen(PORT, async () => {
   logger.info(`   Environment: ${config.server.env}`);
   logger.info(`   CORS origin: ${config.server.corsOrigin}`);
 
-  // Inicializar MongoDB
+  // Inicializar MongoDB (único storage)
   if (config.database.mongoEnabled) {
     logger.info('📦 Conectando ao MongoDB...');
-    await connectMongo(config.database.mongoUri);
-  }
+    const mongoInstance = await connectMongo(config.database.mongoUri);
 
-  // Inicializar Redis
-  if (config.cache.redisEnabled) {
-    logger.info('⚡ Conectando ao Redis...');
-    initRedis(config.cache.redisUrl);
+    // Usar MongoDB como cache centralizado
+    if (mongoInstance) {
+      const { mongoCacheManager } = await import('./db/mongo.js');
+      setMongoCache(mongoCacheManager);
+      logger.info('✅ MongoDB configurado como cache centralizado');
+    }
   }
 
   // Warm-up: popula o cache logo após o servidor subir,
@@ -80,7 +81,7 @@ async function warmUpCache() {
     // 1. Sensores — aguarda o fetch completo das APIs externas
     logger.info('🔄 [1/3] Buscando sensores...');
     const sensors = await sensorMod.fetchAllSensors();
-    cache.set('sensors:all', sensors, config.cache.ttlSensors);
+    await cache.set('sensors:all', sensors, config.cache.ttlSensors);
     logger.info(`✅ [1/3] Sensores: ${sensors.length} carregados`);
 
     // Salvar leitura de sensores no MongoDB para histórico
@@ -96,13 +97,13 @@ async function warmUpCache() {
     // 2. Cidades — agrega usando os sensores já em cache
     logger.info('🔄 [2/3] Agregando cidades...');
     const cities = await cityMod.fetchAllCities();
-    cache.set('cities:aggregated', cities, config.cache.ttlCities);
+    await cache.set('cities:aggregated', cities, config.cache.ttlCities);
     logger.info(`✅ [2/3] Cidades: ${cities.length} agregadas`);
 
     // 3. Ranking — instantâneo pois as cidades já estão prontas
     logger.info('🔄 [3/3] Construindo ranking...');
     const ranking = await cityMod.buildRanking(50);
-    cache.set('cities:ranking:50', ranking, config.cache.ttlRanking);
+    await cache.set('cities:ranking:50', ranking, config.cache.ttlRanking);
     logger.info(`✅ [3/3] Ranking: ${ranking.length} cidades — plataforma pronta! 🌿`);
 
   } catch (err) {

@@ -244,6 +244,40 @@ export async function mongoCacheDel(key) {
   }
 }
 
+export async function mongoCacheDelPattern(pattern) {
+  if (!isAvailable || !CacheEntry) return;
+
+  try {
+    const regex = new RegExp(pattern);
+    await CacheEntry.deleteMany({ key: { $regex: regex } });
+  } catch (err) {
+    logger.debug('mongoCacheDelPattern error:', err.message);
+  }
+}
+
+export async function mongoCacheFlush() {
+  if (!isAvailable || !CacheEntry) return;
+
+  try {
+    await CacheEntry.deleteMany({});
+    logger.info('Cache flushed');
+  } catch (err) {
+    logger.debug('mongoCacheFlush error:', err.message);
+  }
+}
+
+/**
+ * Cache manager object (singleton pattern)
+ * Wraps MongoDB cache operations for unified interface
+ */
+export const mongoCacheManager = {
+  mongoCacheGet,
+  mongoCacheSet,
+  mongoCacheDel,
+  mongoCacheDelPattern,
+  flush: mongoCacheFlush,
+};
+
 /**
  * Cleanup old readings (periodicamente)
  */

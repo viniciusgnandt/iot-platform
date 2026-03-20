@@ -1,187 +1,153 @@
 // src/utils/cache.js
-// Cache em memória com suporte a stale-while-revalidate:
-// - dados nunca são apagados enquanto o processo está rodando
-// - TTL controla quando os dados ficam "stale" (obsoletos), não quando somem
-// - requests que chegam com dados stale retornam os dados antigos imediatamente
-//   e disparam uma revalidação em background
+// Cache centralizado em MongoDB (sem memória local)
 
 import { logger } from './logger.js';
 
-class CacheEntry {
-  constructor(value, ttl) {
-    this.value     = value;
-    this.expiresAt = Date.now() + ttl * 1000;
-    this.stale     = false;
-  }
+let mongoCache = null;
 
-  isExpired() {
-    return Date.now() > this.expiresAt;
-  }
+/**
+ * Inicializa a instância do MongoDB para uso como cache
+ */
+export function setMongoCache(cacheInstance) {
+  mongoCache = cacheInstance;
+  logger.info('✅ Cache MongoDB inicializado');
 }
 
 class CacheManager {
   constructor() {
-    // Mapa principal: chave → CacheEntry (nunca apaga automaticamente)
-    this.store = new Map();
-
-    // Conjunto de chaves com revalidação em andamento (evita double-fetch)
-    this.revalidating = new Set();
-
-    // Funções de revalidação registradas por chave
-    this.revalidators = new Map();
-
-    this.hits   = 0;
+    this.hits = 0;
     this.misses = 0;
     this.staleHits = 0;
   }
 
   /**
-   * Retorna o valor do cache.
-   * - Se fresco: retorna imediatamente (hit)
-   * - Se stale: retorna o valor antigo E dispara revalidação em background
-   * - Se ausente: retorna undefined (miss)
+   * Obtém valor do cache (MongoDB)
    */
-  get(key) {
-    const entry = this.store.get(key);
-
-    if (!entry) {
-      this.misses++;
+  async get(key) {
+    if (!mongoCache) {
+      logger.warn('⚠️  MongoDB cache não inicializado');
       return undefined;
     }
 
-    if (!entry.isExpired()) {
-      this.hits++;
-      return entry.value;
+    try {
+      const value = await mongoCache.mongoCacheGet(key);
+      if (value) {
+        this.hits++;
+      } else {
+        this.misses++;
+      }
+      return value;
+    } catch (err) {
+      logger.warn(`Cache GET erro: ${err.message}`);
+      return undefined;
+    }
+  }
+
+  /**
+   * Define valor no cache (MongoDB com TTL)
+   */
+  async set(key, value, ttlSeconds = 300) {
+    if (!mongoCache) {
+      logger.warn('⚠️  MongoDB cache não inicializado');
+      return;
     }
 
-    // Stale: retorna valor antigo e revalida em background
-    this.staleHits++;
-    logger.debug(`Cache stale para "${key}" — retornando valor antigo, revalidando em background`);
-    this._revalidate(key);
-    return entry.value;
+    try {
+      await mongoCache.mongoCacheSet(key, value, ttlSeconds);
+    } catch (err) {
+      logger.warn(`Cache SET erro: ${err.message}`);
+    }
   }
 
   /**
-   * Armazena um valor no cache
-   * @param {string} key
-   * @param {any} value
-   * @param {number} ttl - segundos até ficar stale
+   * Deleta chave do cache
    */
-  set(key, value, ttl = 300) {
-    this.store.set(key, new CacheEntry(value, ttl));
+  async del(key) {
+    if (!mongoCache) return;
+
+    try {
+      await mongoCache.mongoCacheDel(key);
+    } catch (err) {
+      logger.warn(`Cache DEL erro: ${err.message}`);
+    }
   }
 
   /**
-   * Registra uma função de revalidação para uma chave.
-   * Quando os dados ficam stale, essa função é chamada em background.
-   * @param {string} key
-   * @param {Function} fn - async function que retorna o novo valor
-   * @param {number} ttl
+   * Delete pattern matching
    */
-  registerRevalidator(key, fn, ttl) {
-    this.revalidators.set(key, { fn, ttl });
+  async delPattern(pattern) {
+    if (!mongoCache) return;
+
+    try {
+      await mongoCache.mongoCacheDelPattern(pattern);
+    } catch (err) {
+      logger.warn(`Cache DELPATTERN erro: ${err.message}`);
+    }
   }
 
   /**
-   * Padrão get-or-set com revalidador registrado automaticamente.
-   *
-   * COMPORTAMENTO para requests HTTP (nunca bloqueia):
-   * - Cache fresco  → retorna imediatamente
-   * - Cache stale   → retorna valor antigo + revalida em background
-   * - Cache vazio   → inicia busca em background e retorna [] imediatamente
+   * Limpa todo o cache
    */
-  async getOrSet(key, fn, ttl = 300) {
-    this.registerRevalidator(key, fn, ttl);
+  async flush() {
+    if (!mongoCache) return;
 
-    const cached = this.get(key);
-    if (cached !== undefined) return cached;
-
-    // Primeira vez: não bloqueia — inicia em background e retorna vazio
-    logger.info(`Cache miss para "${key}" — iniciando carga em background`);
-    this._revalidate(key);
-    return [];
+    try {
+      await mongoCache.flush();
+      logger.info('Cache flushed');
+    } catch (err) {
+      logger.warn(`Cache FLUSH erro: ${err.message}`);
+    }
   }
 
   /**
-   * Igual ao getOrSet mas AGUARDA a carga terminar.
-   * Usado APENAS no warm-up do servidor — nunca em handlers HTTP.
+   * Get or Set com função de revalidação
    */
-  async load(key, fn, ttl = 300) {
-    this.registerRevalidator(key, fn, ttl);
-
-    const cached = this.get(key);
-    if (cached !== undefined) return cached;
-
-    // Se já está revalidando (disparado por outro caminho), aguarda ele terminar
-    if (this.revalidating.has(key)) {
-      return this._waitForRevalidation(key);
+  async getOrSet(key, fetchFn, ttlSeconds = 300) {
+    // Tenta obter do cache primeiro
+    const cached = await this.get(key);
+    if (cached !== undefined) {
+      return cached;
     }
 
-    // Executa e aguarda diretamente
-    logger.info(`Cache load() para "${key}" — aguardando carga...`);
-    const value = await fn();
-    this.set(key, value, ttl);
-    return value;
+    // Cache miss - busca dados frescos
+    try {
+      const fresh = await fetchFn();
+      await this.set(key, fresh, ttlSeconds);
+      return fresh;
+    } catch (err) {
+      logger.warn(`getOrSet erro ao buscar ${key}: ${err.message}`);
+      throw err;
+    }
   }
 
   /**
-   * Aguarda uma revalidação em andamento terminar (polling leve).
+   * Estatísticas do cache
    */
-  _waitForRevalidation(key, maxWaitMs = 180_000) {
-    return new Promise((resolve) => {
-      const start = Date.now();
-      const check = () => {
-        if (!this.revalidating.has(key)) {
-          return resolve(this.get(key) ?? []);
-        }
-        if (Date.now() - start > maxWaitMs) {
-          logger.warn(`Timeout aguardando revalidação de "${key}"`);
-          return resolve(this.get(key) ?? []);
-        }
-        setTimeout(check, 500);
-      };
-      check();
-    });
-  }
-
-  /** Dispara revalidação em background (sem bloquear o caller) */
-  _revalidate(key) {
-    if (this.revalidating.has(key)) return; // já em andamento
-    const revalidator = this.revalidators.get(key);
-    if (!revalidator) return;
-
-    this.revalidating.add(key);
-    logger.debug(`Revalidando "${key}" em background...`);
-
-    revalidator.fn()
-      .then(value => {
-        this.set(key, value, revalidator.ttl);
-        logger.debug(`Revalidação de "${key}" concluída`);
-      })
-      .catch(err => {
-        logger.warn(`Revalidação de "${key}" falhou: ${err.message} — mantendo valor antigo`);
-      })
-      .finally(() => {
-        this.revalidating.delete(key);
-      });
-  }
-
-  del(key)  { this.store.delete(key); }
-  flush()   { this.store.clear(); }
-
-  stats() {
+  getStats() {
     const total = this.hits + this.misses + this.staleHits;
+    const hitRate = total > 0 ? ((this.hits / total) * 100).toFixed(1) : 0;
+
     return {
-      keys:       this.store.size,
-      hits:       this.hits,
-      staleHits:  this.staleHits,
-      misses:     this.misses,
-      revalidating: [...this.revalidating],
-      hitRate: total > 0
-        ? (((this.hits + this.staleHits) / total) * 100).toFixed(1) + '%'
-        : '0%',
+      hits: this.hits,
+      misses: this.misses,
+      staleHits: this.staleHits,
+      hitRate: `${hitRate}%`,
+      total,
+      source: 'MongoDB',
     };
+  }
+
+  /**
+   * Reset stats
+   */
+  resetStats() {
+    this.hits = 0;
+    this.misses = 0;
+    this.staleHits = 0;
   }
 }
 
+// Exporta instância singleton
 export const cache = new CacheManager();
+
+export default cache;

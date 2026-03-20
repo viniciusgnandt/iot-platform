@@ -65,8 +65,8 @@ export async function fetchAllSensors() {
   const enriched = filtered.map(enrichWithICAUD);
 
   // Invalida o cache de cidades sempre que os sensores forem atualizados
-  cache.del('cities:aggregated');
-  cache.del('cities:ranking:50');
+  await cache.del('cities:aggregated');
+  await cache.del('cities:ranking:50');
 
   return enriched;
 }
