@@ -50,7 +50,7 @@ if (isAvailable && mongoose) {
       deviceType: String,
       sensorCount: Number,
       exposure: { type: String, enum: ['indoor', 'outdoor', null] },
-      recordedAt: { type: Date, default: Date.now, index: true },
+      recordedAt: { type: Date, default: Date.now },
     },
     { timestamps: true }
   );
@@ -61,9 +61,9 @@ if (isAvailable && mongoose) {
   // Schema para cache persistente
   const cacheEntrySchema = new Schema(
     {
-      key: { type: String, required: true, unique: true, index: true },
+      key: { type: String, required: true, unique: true },
       value: mongoose.Schema.Types.Mixed,
-      expiresAt: { type: Date, index: true },
+      expiresAt: { type: Date },
     },
     { timestamps: true }
   );
