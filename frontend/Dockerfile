@@ -5,11 +5,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy package file
+COPY package.json ./
+
+# Copy lock file if it exists, otherwise npm install will create it
+COPY package-lock.json* ./
 
 # Install dependencies
-RUN npm ci
+RUN npm ci --prefer-offline --no-audit || npm install
 
 # Copy source code
 COPY . .

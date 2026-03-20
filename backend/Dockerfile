@@ -8,11 +8,14 @@ WORKDIR /app
 # Install system dependencies for better-sqlite3
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy package file
+COPY package.json ./
+
+# Copy lock file if it exists
+COPY package-lock.json* ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci --prefer-offline --no-audit --only=production || npm install --only=production
 
 # Copy application code
 COPY src ./src
