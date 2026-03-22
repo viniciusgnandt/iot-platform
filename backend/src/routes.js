@@ -12,6 +12,17 @@ router.get('/health', (req, res) => {
   res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Manual refresh trigger (útil para forçar atualização sem reiniciar)
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refreshData } = await import('./index.js');
+    res.json({ success: true, message: 'Atualização iniciada em background' });
+    refreshData(); // não await — roda em background
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Debug: verificar estado do sistema
 router.get('/debug', async (req, res) => {
   const { getAllSensors } = await import('./services/sensorService.js');
