@@ -14,11 +14,11 @@ services:
       NODE_ENV: production
       PORT: 3002
       CORS_ORIGIN: "https://iot-platform.viniciusgnandt.com.br"
-      MONGO_URI: mongodb+srv://viniciusgnandt_db_user:kk3KyRKh0ppv8j0S@univesp-pi-5.akx42mw.mongodb.net/?appName=univesp-pi-5
+      MONGO_URI: ${MONGO_URI}
       MONGO_ENABLED: "true"
-      CACHE_TTL_SENSORS: 300
-      CACHE_TTL_CITIES: 600
-      CACHE_TTL_RANKING: 600
+      CACHE_TTL_SENSORS: 3600
+      CACHE_TTL_CITIES: 3600
+      CACHE_TTL_RANKING: 3600
       RATE_LIMIT_WINDOW_MS: 60000
       RATE_LIMIT_MAX_REQUESTS: 100
       SENSOR_COMMUNITY_BASE_URL: https://data.sensor.community/airrohr/v1/filter

@@ -71,6 +71,26 @@ const ALL_CITIES = [...BRAZIL_CITIES, ...EUROPE_CITIES];
  * Open-Meteo is free and does not require an API key.
  * Provides: temperature, humidity, wind speed (NOT PM2.5).
  */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function fetchWithRetry(url, params, timeout = 20000, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await axios.get(url, { params, timeout });
+    } catch (err) {
+      const isRetryable = err.code === 'ECONNRESET' || err.code === 'ECONNABORTED' ||
+        err.message.includes('TLS') || err.message.includes('socket') ||
+        err.message.includes('timeout') || err.message.includes('network');
+      if (isRetryable && attempt < retries) {
+        logger.warn(`Open-Meteo tentativa ${attempt} falhou (${err.code || err.message}), aguardando ${attempt * 2}s...`);
+        await sleep(attempt * 2000);
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 async function fetchOpenMeteo(cities, tag = '') {
   const sensors = [];
 
@@ -79,15 +99,12 @@ async function fetchOpenMeteo(cities, tag = '') {
   const lons = cities.map(c => c.lon).join(',');
 
   try {
-    const response = await axios.get('https://api.open-meteo.com/v1/forecast', {
-      params: {
-        latitude: lats,
-        longitude: lons,
-        current: 'temperature_2m,relative_humidity_2m,wind_speed_10m',
-        timezone: 'auto',
-      },
-      timeout: 15000,
-    });
+    const response = await fetchWithRetry('https://api.open-meteo.com/v1/forecast', {
+      latitude: lats,
+      longitude: lons,
+      current: 'temperature_2m,relative_humidity_2m,wind_speed_10m',
+      timezone: 'auto',
+    }, 20000);
 
     // Open-Meteo returns array when multiple coords, single object for one
     const results = Array.isArray(response.data) ? response.data : [response.data];
@@ -123,15 +140,12 @@ async function fetchOpenMeteo(cities, tag = '') {
     logger.warn(`Open-Meteo batch failed${tag}, falling back to individual requests: ${err.message}`);
     for (const city of cities) {
       try {
-        const response = await axios.get('https://api.open-meteo.com/v1/forecast', {
-          params: {
+        const response = await fetchWithRetry('https://api.open-meteo.com/v1/forecast', {
             latitude: city.lat,
             longitude: city.lon,
             current: 'temperature_2m,relative_humidity_2m,wind_speed_10m',
             timezone: 'auto',
-          },
-          timeout: 8000,
-        });
+          }, 15000);
         const current = response.data?.current;
         if (!current) continue;
 

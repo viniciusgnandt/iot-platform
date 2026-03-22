@@ -19,6 +19,9 @@ import { setMongoCache } from './utils/cache.js';
 
 const app = express();
 
+// Necessário para express-rate-limit funcionar corretamente atrás de nginx/proxy
+app.set('trust proxy', 1);
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(corsMiddleware);
 app.use(compressionMiddleware);
