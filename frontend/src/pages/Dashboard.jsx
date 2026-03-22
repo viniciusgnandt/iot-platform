@@ -1,9 +1,10 @@
 // src/pages/Dashboard.jsx
 // Main dashboard: sensor map, stats, top cities
 
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useSensors, useSensorsHistory, useSensorsHistoryFallback, useRanking, useCities } from '../hooks/useEnvironmentalData.js';
+import { formatRelativeTimeBRT, formatFullDateTimeBRT } from '../utils/dateFormatter.js';
 import { StatCard, ScoreRing, Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import RankingTable from '../components/ranking/RankingTable.jsx';
 import { TopCitiesChart, ClassificationDonut } from '../components/charts/EnvironmentalChart.jsx';
@@ -68,6 +69,15 @@ export default function Dashboard() {
 
   const mapReady = !(sensorsLoading || (isHistoryMode && historyLoading));
 
+  // Data da leitura mais recente entre todos os sensores visíveis
+  const lastReadingAt = useMemo(() => {
+    const timestamps = sensorsReady
+      .map(s => s.lastSeen)
+      .filter(Boolean)
+      .sort();
+    return timestamps.at(-1) || null;
+  }, [sensorsReady]);
+
   return (
     <div className="space-y-8">
       {/* Cabeçalho */}
@@ -82,6 +92,14 @@ export default function Dashboard() {
                 : `Dados em tempo real de ${sensorsReady.length} sensores ativos em ${cities.length} cidades`
             }
           </p>
+          {lastReadingAt && (
+            <span
+              title={`Última leitura: ${formatFullDateTimeBRT(lastReadingAt)} (BRT)`}
+              className="inline-flex items-center gap-1 mt-1 text-xs text-gray-500 cursor-help"
+            >
+              🕐 Atualizado {formatRelativeTimeBRT(lastReadingAt)}
+            </span>
+          )}
           {usingFallback && (
             <span className="inline-flex items-center gap-1 mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
               ⏳ Aguardando dados ao vivo — exibindo histórico recente

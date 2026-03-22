@@ -4,6 +4,7 @@
 import { Link } from 'react-router-dom';
 import { classify, formatScore, formatMeasurement } from '../../utils/icaud.js';
 import { ClassificationBadge } from '../ui/index.jsx';
+import { formatRelativeTimeBRT, formatFullDateTimeBRT } from '../../utils/dateFormatter.js';
 
 export default function RankingTable({ cities = [], showDetails = false }) {
   return (
@@ -24,6 +25,7 @@ export default function RankingTable({ cities = [], showDetails = false }) {
               </>
             )}
             <th className="text-center py-3 px-4 text-xs uppercase tracking-wider text-gray-500 font-semibold hidden sm:table-cell">Sensores</th>
+            <th className="text-center py-3 px-4 text-xs uppercase tracking-wider text-gray-500 font-semibold hidden md:table-cell">Última Leitura</th>
           </tr>
         </thead>
         <tbody>
@@ -34,8 +36,9 @@ export default function RankingTable({ cities = [], showDetails = false }) {
             const m     = city.measurements || {};
 
             const sensorInfo = city.sensorList && city.sensorList.length > 0
-              ? city.sensorList.map(s => `${s.name} (${s.source})`).join('\n')
+              ? city.sensorList.map(s => `${s.name} (${s.source})${s.lastSeen ? ' — ' + formatFullDateTimeBRT(s.lastSeen) : ''}`).join('\n')
               : '';
+            const lastSeen = city.lastSeen || city.updatedAt || null;
 
             return (
               <tr
@@ -105,6 +108,20 @@ export default function RankingTable({ cities = [], showDetails = false }) {
                   >
                     📡 {city.sensorCount}
                   </span>
+                </td>
+
+                {/* Last reading */}
+                <td className="py-3 px-4 text-center hidden md:table-cell">
+                  {lastSeen ? (
+                    <span
+                      title={formatFullDateTimeBRT(lastSeen) + ' (BRT)'}
+                      className="text-xs text-gray-500 cursor-help"
+                    >
+                      {formatRelativeTimeBRT(lastSeen)}
+                    </span>
+                  ) : (
+                    <span className="text-gray-300 text-xs">—</span>
+                  )}
                 </td>
               </tr>
             );

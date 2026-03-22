@@ -159,8 +159,15 @@ function computeCityStats(cityData) {
       name: s.name,
       source: s.source,
       deviceType: s.deviceType,
+      lastSeen: s.lastSeen || null,
     })),
-    updatedAt:   new Date().toISOString(),
+    // lastSeen = timestamp mais recente entre todos os sensores da cidade
+    lastSeen: sensors
+      .map(s => s.lastSeen)
+      .filter(Boolean)
+      .sort()
+      .at(-1) || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 }
 

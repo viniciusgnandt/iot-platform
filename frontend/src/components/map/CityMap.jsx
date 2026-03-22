@@ -3,7 +3,7 @@
 
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import { getMarkerColor, classify, formatMeasurement } from '../../utils/icaud.js';
-import { formatTimeBRT } from '../../utils/dateFormatter.js';
+import { formatRelativeTimeBRT, formatFullDateTimeBRT } from '../../utils/dateFormatter.js';
 import { ScoreBadge } from '../ui/index.jsx';
 import { useEffect } from 'react';
 import L from 'leaflet';
@@ -169,7 +169,7 @@ export default function CityMap({ cities = [], sensors = [], center = [-14.2350,
                               )}
                             </div>
                             <div className="text-gray-500 text-xs mt-1">
-                              Última: {formatTimeBRT(sensor.lastSeen)} (BRT)
+                              🕐 {formatRelativeTimeBRT(sensor.lastSeen)} — {formatFullDateTimeBRT(sensor.lastSeen)}
                             </div>
                           </div>
                         ))}

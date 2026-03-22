@@ -3,7 +3,7 @@
 
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import { getMarkerColor, classify, formatMeasurement } from '../../utils/icaud.js';
-import { formatFullDateTimeBRT } from '../../utils/dateFormatter.js';
+import { formatFullDateTimeBRT, formatRelativeTimeBRT } from '../../utils/dateFormatter.js';
 import { ScoreBadge } from '../ui/index.jsx';
 import { useEffect, useRef } from 'react';
 
@@ -137,8 +137,8 @@ export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253],
                     )}
                   </div>
 
-                  <div className="mt-2 text-xs text-gray-400">
-                    Última leitura: {formatFullDateTimeBRT(sensor.lastSeen)} (BRT)
+                  <div className="mt-2 text-xs text-gray-400" title={formatFullDateTimeBRT(sensor.lastSeen) + ' (BRT)'}>
+                    🕐 {formatRelativeTimeBRT(sensor.lastSeen)} — {formatFullDateTimeBRT(sensor.lastSeen)}
                   </div>
                 </div>
               </Popup>

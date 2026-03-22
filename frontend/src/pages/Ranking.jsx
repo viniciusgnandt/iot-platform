@@ -6,6 +6,7 @@ import { useRanking, useSensorsHistory, useSensorsHistoryFallback } from '../hoo
 import { Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import RankingTable from '../components/ranking/RankingTable.jsx';
 import { CLASSIFICATIONS, classify } from '../utils/icaud.js';
+import { formatRelativeTimeBRT, formatFullDateTimeBRT } from '../utils/dateFormatter.js';
 
 // Mapeamento país → continente
 const COUNTRY_CONTINENT = {
@@ -120,6 +121,12 @@ export default function Ranking() {
     ? historyLoading
     : rankingLoading || rankingRes?.loading;
 
+  // Data da leitura mais recente entre todas as cidades visíveis
+  const lastReadingAt = useMemo(() => {
+    const timestamps = cities.map(c => c.lastSeen || c.updatedAt).filter(Boolean).sort();
+    return timestamps.at(-1) || null;
+  }, [cities]);
+
   // Extrair continentes e países disponíveis
   const { continents, countriesInContinent } = useMemo(() => {
     const continentSet = new Set();
@@ -160,6 +167,14 @@ export default function Ranking() {
                 : `Cidades classificadas pelo Índice de Conforto Ambiental Urbano (ICAU-D)`
             }
           </p>
+          {lastReadingAt && (
+            <span
+              title={`Última leitura: ${formatFullDateTimeBRT(lastReadingAt)} (BRT)`}
+              className="inline-flex items-center gap-1 mt-1 text-xs text-gray-500 cursor-help"
+            >
+              🕐 Atualizado {formatRelativeTimeBRT(lastReadingAt)}
+            </span>
+          )}
           {usingFallback && (
             <span className="inline-flex items-center gap-1 mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
               ⏳ Aguardando dados ao vivo — exibindo histórico recente
