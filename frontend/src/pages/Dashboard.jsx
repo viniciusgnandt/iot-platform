@@ -3,7 +3,7 @@
 
 import { Suspense, lazy, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSensors, useSensorsHistory, useRanking, useCities } from '../hooks/useEnvironmentalData.js';
+import { useSensors, useSensorsHistory, useSensorsHistoryFallback, useRanking, useCities } from '../hooks/useEnvironmentalData.js';
 import { StatCard, ScoreRing, Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import RankingTable from '../components/ranking/RankingTable.jsx';
 import { TopCitiesChart, ClassificationDonut } from '../components/charts/EnvironmentalChart.jsx';
@@ -17,10 +17,10 @@ function GlobalStats({ cities = [], sensors = [] }) {
     ? validCities.reduce((s, c) => s + c.icaud.score, 0) / validCities.length
     : null;
 
-  const avgTemp = sensors.filter(s => s.measurements.temperature !== null);
-  const avgHum  = sensors.filter(s => s.measurements.humidity !== null);
-  const avgPm25 = sensors.filter(s => s.measurements.pm25 !== null);
-  const avgWind = sensors.filter(s => s.measurements.windSpeed !== null);
+  const avgTemp = sensors.filter(s => s.measurements?.temperature !== null && s.measurements?.temperature !== undefined);
+  const avgHum  = sensors.filter(s => s.measurements?.humidity    !== null && s.measurements?.humidity    !== undefined);
+  const avgPm25 = sensors.filter(s => s.measurements?.pm25        !== null && s.measurements?.pm25        !== undefined);
+  const avgWind = sensors.filter(s => s.measurements?.windSpeed   !== null && s.measurements?.windSpeed   !== undefined);
 
   const mean = (arr, field) =>
     arr.length > 0
@@ -29,10 +29,10 @@ function GlobalStats({ cities = [], sensors = [] }) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <StatCard label="Temperatura Média" value={mean(avgTemp, 'temperature')?.toFixed(1)} unit="°C" icon="🌡️" color="#f59e0b" />
-      <StatCard label="Umidade Média"     value={mean(avgHum, 'humidity')?.toFixed(0)}     unit="%"   icon="💧" color="#3b82f6" />
-      <StatCard label="PM2.5 Médio"       value={mean(avgPm25, 'pm25')?.toFixed(1)}         unit="µg/m³" icon="🌫️" color="#8b5cf6" />
-      <StatCard label="Velocidade Vento"  value={mean(avgWind, 'windSpeed')?.toFixed(1)}   unit="m/s" icon="💨" color="#06b6d4" />
+      <StatCard label="Temperatura Média" value={mean(avgTemp, 'temperature')?.toFixed(1)} unit="°C"    icon="🌡️" color="#f59e0b" />
+      <StatCard label="Umidade Média"     value={mean(avgHum,  'humidity')?.toFixed(0)}    unit="%"     icon="💧" color="#3b82f6" />
+      <StatCard label="PM2.5 Médio"       value={mean(avgPm25, 'pm25')?.toFixed(1)}        unit="µg/m³" icon="🌫️" color="#8b5cf6" />
+      <StatCard label="Velocidade Vento"  value={mean(avgWind, 'windSpeed')?.toFixed(1)}   unit="m/s"   icon="💨" color="#06b6d4" />
     </div>
   );
 }
@@ -40,24 +40,33 @@ function GlobalStats({ cities = [], sensors = [] }) {
 export default function Dashboard() {
   const [timePeriod, setTimePeriod] = useState('live');
 
-  const { data: liveSensors = [], isLoading: sensorsLoading, error: sensorsError } = useSensors({ limit: 500 });
+  const { data: liveSensors = [], isLoading: sensorsLoading } = useSensors({ limit: 500 });
   const { data: historySensors = [], isLoading: historyLoading } = useSensorsHistory(timePeriod);
-  const { data: rankingRes,   isLoading: rankingLoading  } = useRanking(10);
-  const { data: cities  = [], isLoading: citiesLoading  } = useCities();
+  const { data: fallbackSensors = [] } = useSensorsHistoryFallback();
+  const { data: rankingRes, isLoading: rankingLoading } = useRanking(10);
+  const { data: cities = [], isLoading: citiesLoading } = useCities();
 
-  // Use historical data when period is not live
-  const sensors = timePeriod === 'live' ? liveSensors : (historySensors.length > 0 ? historySensors : liveSensors);
   const isHistoryMode = timePeriod !== 'live';
 
-  const ranking        = rankingRes?.data    || [];
-  const rankingLoading2 = rankingLoading || rankingRes?.loading;
-  const isLoading      = sensorsLoading || rankingLoading || (isHistoryMode && historyLoading);
+  // Sensor selection with fallback:
+  // - live mode: use live data, or fallback to MongoDB history if live is still empty
+  // - history mode: use selected period history, or live data if history is empty
+  const sensorsReady = isHistoryMode
+    ? (historySensors.length > 0 ? historySensors : liveSensors)
+    : (liveSensors.length > 0 ? liveSensors : fallbackSensors);
 
-  // Calculate global average ICAU-D
-  const validCities  = cities.filter(c => c.icaud?.score !== null);
+  const usingFallback = !isHistoryMode && liveSensors.length === 0 && fallbackSensors.length > 0;
+
+  const ranking = rankingRes?.data || [];
+  const rankingStillLoading = rankingLoading || rankingRes?.loading;
+  const isLoading = sensorsLoading || rankingLoading || (isHistoryMode && historyLoading);
+
+  const validCities = cities.filter(c => c.icaud?.score !== null);
   const globalAvgScore = validCities.length > 0
     ? validCities.reduce((s, c) => s + c.icaud.score, 0) / validCities.length
     : null;
+
+  const mapReady = !(sensorsLoading || (isHistoryMode && historyLoading));
 
   return (
     <div className="space-y-8">
@@ -66,11 +75,18 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Painel Ambiental</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {timePeriod === 'live'
-              ? `Índice de Conforto Urbano em tempo real de ${sensors.length} sensores ativos em ${cities.length} cidades`
-              : `Médias históricas (${timePeriod === 'week' ? '7 dias' : '30 dias'}) de ${sensors.length} sensores em ${cities.length} cidades`
+            {isHistoryMode
+              ? `Médias históricas (${timePeriod === 'week' ? '7 dias' : '30 dias'}) de ${sensorsReady.length} sensores em ${cities.length} cidades`
+              : usingFallback
+                ? `Exibindo dados históricos recentes (${sensorsReady.length} sensores) — dados ao vivo ainda carregando`
+                : `Dados em tempo real de ${sensorsReady.length} sensores ativos em ${cities.length} cidades`
             }
           </p>
+          {usingFallback && (
+            <span className="inline-flex items-center gap-1 mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+              ⏳ Aguardando dados ao vivo — exibindo histórico recente
+            </span>
+          )}
         </div>
         <div className="flex-shrink-0">
           <ScoreRing score={globalAvgScore} size={100} />
@@ -112,18 +128,28 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {sensorsError && <ErrorAlert message="Falha ao carregar dados dos sensores" />}
-
-      {isLoading ? <Spinner /> : <GlobalStats cities={cities} sensors={sensors} />}
+      {isLoading ? <Spinner /> : <GlobalStats cities={cities} sensors={sensorsReady} />}
 
       {/* Mapa */}
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-3">
-          🗺️ {timePeriod === 'live' ? 'Mapa de Sensores ao Vivo' : `Mapa de Sensores — Média ${timePeriod === 'week' ? '7 dias' : '30 dias'}`}
+          🗺️ {isHistoryMode
+            ? `Mapa — Média ${timePeriod === 'week' ? '7 dias' : '30 dias'}`
+            : usingFallback ? 'Mapa — Dados Históricos Recentes' : 'Mapa de Sensores ao Vivo'
+          }
         </h2>
         <Suspense fallback={<Spinner />}>
-          {!(sensorsLoading || (isHistoryMode && historyLoading)) && (
-            <SensorMap sensors={sensors} height="450px" />
+          {mapReady && sensorsReady.length > 0 ? (
+            <SensorMap sensors={sensorsReady} height="450px" />
+          ) : mapReady && sensorsReady.length === 0 ? (
+            <div className="h-[450px] bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center text-gray-400">
+              <div className="text-center">
+                <div className="text-4xl mb-2">🗺️</div>
+                <p className="text-sm">Aguardando dados dos sensores…</p>
+              </div>
+            </div>
+          ) : (
+            <div className="h-[450px] flex items-center justify-center"><Spinner /></div>
           )}
         </Suspense>
       </div>
@@ -132,7 +158,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
           <h2 className="text-base font-semibold text-gray-800 mb-4">🏙️ Top Cidades por ICAU-D</h2>
-          {(rankingLoading || rankingLoading2 || ranking.length === 0) ? (
+          {rankingStillLoading || ranking.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 gap-2">
               <div className="animate-spin text-3xl">⚙️</div>
               <p className="text-sm">Carregando ranking…</p>
@@ -144,7 +170,7 @@ export default function Dashboard() {
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
           <h2 className="text-base font-semibold text-gray-800 mb-4">📊 Distribuição por Classificação</h2>
-          {(citiesLoading || cities.length === 0) ? (
+          {citiesLoading || cities.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 gap-2">
               <div className="animate-spin text-3xl">⚙️</div>
               <p className="text-sm">Carregando cidades…</p>
@@ -163,7 +189,7 @@ export default function Dashboard() {
             Ver ranking completo →
           </Link>
         </div>
-        {(rankingLoading || rankingLoading2) ? (
+        {rankingStillLoading ? (
           <Spinner />
         ) : ranking.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-3">
