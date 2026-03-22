@@ -2,10 +2,10 @@
 // Full city ranking page with filtering
 
 import { useState, useMemo } from 'react';
-import { useRanking } from '../hooks/useEnvironmentalData.js';
+import { useRanking, useSensorsHistory, useSensorsHistoryFallback } from '../hooks/useEnvironmentalData.js';
 import { Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import RankingTable from '../components/ranking/RankingTable.jsx';
-import { CLASSIFICATIONS } from '../utils/icaud.js';
+import { CLASSIFICATIONS, classify } from '../utils/icaud.js';
 
 // Mapeamento país → continente
 const COUNTRY_CONTINENT = {
@@ -34,15 +34,91 @@ function getContinent(country) {
   return COUNTRY_CONTINENT[country] || 'Outros';
 }
 
-export default function Ranking() {
-  const [limit, setLimit]              = useState(50);
-  const [filterClass, setFilter]       = useState('');
-  const [filterContinent, setContinent] = useState('');
-  const [filterCountry, setCountry]    = useState('');
-  const { data: rankingRes, isLoading, refetch } = useRanking(limit);
+/**
+ * Agrega sensores históricos em cidades (mesmo critério do backend).
+ * Usado nos modos "7 dias" e "30 dias".
+ */
+function aggregateSensorsToCities(sensors) {
+  const cityMap = new Map();
 
-  const cities         = rankingRes?.data    || [];
-  const isLoadingData  = isLoading || rankingRes?.loading;
+  for (const s of sensors) {
+    const cityName = s.location?.city;
+    if (!cityName) continue;
+
+    if (!cityMap.has(cityName)) {
+      cityMap.set(cityName, {
+        name: cityName,
+        country: s.location?.country || 'Unknown',
+        sensors: [],
+      });
+    }
+    cityMap.get(cityName).sensors.push(s);
+  }
+
+  const cities = [];
+  for (const { name, country, sensors: ss } of cityMap.values()) {
+    const scores = ss.map(s => s.icaud?.score).filter(v => v !== null && v !== undefined);
+    const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+
+    const avg = (field) => {
+      const vals = ss.map(s => s.measurements?.[field]).filter(v => v !== null && v !== undefined);
+      return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    };
+
+    cities.push({
+      name,
+      country,
+      sensorCount: ss.length,
+      icaud: {
+        score: avgScore !== null ? Math.round(avgScore * 10) / 10 : null,
+        classification: avgScore !== null ? classify(avgScore) : null,
+      },
+      measurements: {
+        temperature: avg('temperature'),
+        humidity: avg('humidity'),
+        pm25: avg('pm25'),
+        windSpeed: avg('windSpeed'),
+      },
+    });
+  }
+
+  return cities.sort((a, b) => (b.icaud?.score ?? -1) - (a.icaud?.score ?? -1));
+}
+
+export default function Ranking() {
+  const [timePeriod, setTimePeriod]     = useState('live');
+  const [limit, setLimit]               = useState(50);
+  const [filterClass, setFilter]        = useState('');
+  const [filterContinent, setContinent] = useState('');
+  const [filterCountry, setCountry]     = useState('');
+
+  const { data: rankingRes, isLoading: rankingLoading, refetch } = useRanking(limit);
+  const { data: historySensors = [], isLoading: historyLoading } = useSensorsHistory(timePeriod);
+  const { data: fallbackSensors = [] } = useSensorsHistoryFallback();
+
+  const isHistoryMode = timePeriod !== 'live';
+  const liveCities    = rankingRes?.data || [];
+
+  // Cidades históricas agregadas no frontend
+  const historyCities = useMemo(
+    () => aggregateSensorsToCities(historySensors),
+    [historySensors]
+  );
+  const fallbackCities = useMemo(
+    () => aggregateSensorsToCities(fallbackSensors),
+    [fallbackSensors]
+  );
+
+  // Seleção de dados com fallback (mesmo padrão do Dashboard)
+  const cities = isHistoryMode
+    ? (historyCities.length > 0 ? historyCities : liveCities)
+    : (liveCities.length > 0 ? liveCities : fallbackCities);
+
+  const usingFallback = !isHistoryMode && liveCities.length === 0 && fallbackCities.length > 0;
+
+  const isLoadingData = isHistoryMode
+    ? historyLoading
+    : rankingLoading || rankingRes?.loading;
 
   // Extrair continentes e países disponíveis
   const { continents, countriesInContinent } = useMemo(() => {
@@ -56,8 +132,6 @@ export default function Ranking() {
       }
     }
     const continents = [...continentSet].sort();
-
-    // Países filtrados pelo continente selecionado
     const countriesInContinent = [...countrySet]
       .filter(code => !filterContinent || getContinent(code) === filterContinent)
       .sort((a, b) => (COUNTRY_NAMES[a] || a).localeCompare(COUNTRY_NAMES[b] || b));
@@ -79,8 +153,18 @@ export default function Ranking() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">🏆 Ranking de Cidades</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Cidades classificadas pelo Índice de Conforto Ambiental Urbano (ICAU-D)
+            {isHistoryMode
+              ? `Médias históricas (${timePeriod === 'week' ? '7 dias' : '30 dias'}) — ${cities.length} cidades`
+              : usingFallback
+                ? `Exibindo dados históricos recentes (${cities.length} cidades) — dados ao vivo ainda carregando`
+                : `Cidades classificadas pelo Índice de Conforto Ambiental Urbano (ICAU-D)`
+            }
           </p>
+          {usingFallback && (
+            <span className="inline-flex items-center gap-1 mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+              ⏳ Aguardando dados ao vivo — exibindo histórico recente
+            </span>
+          )}
         </div>
         <button
           onClick={() => refetch()}
@@ -90,17 +174,53 @@ export default function Ranking() {
         </button>
       </div>
 
+      {/* Filtros de Período */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setTimePeriod('live')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            timePeriod === 'live'
+              ? 'bg-green-600 text-white shadow-md'
+              : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          🔴 Ao Vivo
+        </button>
+        <button
+          onClick={() => setTimePeriod('week')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            timePeriod === 'week'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          📅 Últimos 7 Dias
+        </button>
+        <button
+          onClick={() => setTimePeriod('month')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            timePeriod === 'month'
+              ? 'bg-purple-600 text-white shadow-md'
+              : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          🗓️ Último Mês
+        </button>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <select
-          value={limit}
-          onChange={e => setLimit(Number(e.target.value))}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-        >
-          <option value={25}>Top 25</option>
-          <option value={50}>Top 50</option>
-          <option value={100}>Top 100</option>
-        </select>
+        {!isHistoryMode && (
+          <select
+            value={limit}
+            onChange={e => setLimit(Number(e.target.value))}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <option value={25}>Top 25</option>
+            <option value={50}>Top 50</option>
+            <option value={100}>Top 100</option>
+          </select>
+        )}
 
         <select
           value={filterContinent}
@@ -149,7 +269,12 @@ export default function Ranking() {
             <p className="text-xs text-gray-300">Atualizando automaticamente</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">Nenhuma cidade corresponde ao filtro atual</div>
+          <div className="text-center py-12 text-gray-400">
+            {cities.length === 0
+              ? 'Aguardando dados — o backend está coletando informações das APIs externas…'
+              : 'Nenhuma cidade corresponde ao filtro atual'
+            }
+          </div>
         ) : (
           <RankingTable cities={filtered} showDetails={true} />
         )}
