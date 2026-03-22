@@ -1,17 +1,17 @@
 // src/pages/SensorExplainer.jsx
 // Comprehensive guide about sensors and types
-
-// Comprehensive guide about sensors and types
+import { useTranslation } from 'react-i18next';
 
 /** Sensor type card */
 function SensorTypeCard({ icon, name, model, description, measurements, manufacturer, cost }) {
+  const { t } = useTranslation();
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start gap-4 mb-4">
         <div className="text-4xl">{icon}</div>
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900 text-lg">{name}</h3>
-          <p className="text-xs text-gray-500 mt-1">Modelo: <span className="font-mono">{model}</span></p>
+          <p className="text-xs text-gray-500 mt-1"><span className="font-mono">{model}</span></p>
         </div>
       </div>
 
@@ -19,7 +19,7 @@ function SensorTypeCard({ icon, name, model, description, measurements, manufact
 
       <div className="space-y-2 mb-4">
         <div>
-          <span className="text-xs font-semibold text-gray-700 uppercase">Mede:</span>
+          <span className="text-xs font-semibold text-gray-700 uppercase">{t('sensors.sensorFields.measures')}:</span>
           <div className="flex flex-wrap gap-1 mt-1">
             {measurements.map(m => (
               <span key={m} className="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">
@@ -29,11 +29,11 @@ function SensorTypeCard({ icon, name, model, description, measurements, manufact
           </div>
         </div>
         <div>
-          <span className="text-xs font-semibold text-gray-700 uppercase">Fabricante:</span>
+          <span className="text-xs font-semibold text-gray-700 uppercase">{t('sensors.sensorFields.type')}:</span>
           <p className="text-sm text-gray-600 mt-0.5">{manufacturer}</p>
         </div>
         <div>
-          <span className="text-xs font-semibold text-gray-700 uppercase">Custo estimado:</span>
+          <span className="text-xs font-semibold text-gray-700 uppercase">{t('sensors.sensorFields.precision')}:</span>
           <p className="text-sm text-gray-600 mt-0.5">{cost}</p>
         </div>
       </div>
@@ -55,15 +55,12 @@ function MeasurementInfoCard({ icon, name, unit, range, accuracy, importance }) 
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between border-b border-gray-100 pb-2">
-          <span className="text-gray-600">Faixa típica:</span>
-          <span className="font-mono font-semibold text-gray-800">{range}</span>
+          <span className="text-gray-600">{range}</span>
         </div>
         <div className="flex justify-between border-b border-gray-100 pb-2">
-          <span className="text-gray-600">Precisão:</span>
           <span className="font-mono font-semibold text-gray-800">{accuracy}</span>
         </div>
         <div>
-          <span className="text-gray-600 block mb-1">Importância:</span>
           <p className="text-gray-600">{importance}</p>
         </div>
       </div>
@@ -72,30 +69,24 @@ function MeasurementInfoCard({ icon, name, unit, range, accuracy, importance }) 
 }
 
 export default function SensorExplainer() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-8">
       {/* Hero */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100 p-8 md:p-12">
         <div className="max-w-3xl">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-            O que são Sensores IoT?
+            {t('sensors.title')}
           </h1>
           <p className="text-lg text-gray-600 mb-4">
-            <strong>IoT</strong> significa <em>Internet of Things</em> (Internet das Coisas).
-            Sensores IoT são dispositivos eletrônicos que medem variáveis ambientais e as transmitem
-            pela internet para serem analisadas em tempo real.
-          </p>
-          <p className="text-gray-600">
-            A plataforma EcoSense coleta dados de sensores distribuídos em cidades do mundo inteiro,
-            unificando informações sobre qualidade do ar, temperatura, umidade e vento para calcular
-            o índice ICAU-D.
+            {t('sensors.subtitle')}
           </p>
         </div>
       </div>
 
       {/* How sensors work */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-5">Como Sensores Funcionam</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-5">{t('sensors.howTitle')}</h2>
 
         <div className="bg-white rounded-xl border border-gray-100 p-8">
           <div className="space-y-6">
@@ -169,7 +160,7 @@ export default function SensorExplainer() {
 
       {/* Sensor types used in EcoSense */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-5">Tipos de Sensores na EcoSense</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-5">{t('sensors.typesTitle')}</h2>
         <p className="text-gray-600 mb-6">
           A plataforma integra dados de <strong>2 redes públicas</strong> diferentes, agregando sensores comunitários e estações meteorológicas:
         </p>
@@ -222,10 +213,7 @@ export default function SensorExplainer() {
 
       {/* Measurement specifications */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-5">Especificações das Medições</h2>
-        <p className="text-gray-600 mb-6">
-          Entenda os ranges, precisões e importância de cada variável medida:
-        </p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-5">{t('sensors.maintenanceTitle')}</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <MeasurementInfoCard
@@ -265,10 +253,10 @@ export default function SensorExplainer() {
 
       {/* Sensor maintenance and accuracy */}
       <div className="bg-amber-50 rounded-xl border border-amber-200 p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-5">Manutenção e Precisão</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-5">{t('sensors.maintenanceTitle')}</h2>
         <div className="space-y-4">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">🔧 Manutenção Necessária</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">{t('sensors.maintenanceRequired')}</h3>
             <ul className="space-y-2 text-sm text-gray-600 ml-4 list-disc">
               <li><strong>Limpeza:</strong> Sensores PM podem acumular poeira — limpeza a cada 3-6 meses</li>
               <li><strong>Calibração:</strong> Sensores de PM podem desvia com o tempo — recalibração anual recomendada</li>
@@ -277,7 +265,7 @@ export default function SensorExplainer() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">⚠️ Limitações</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">{t('sensors.limitations')}</h3>
             <ul className="space-y-2 text-sm text-gray-600 ml-4 list-disc">
               <li><strong>Sensores comunitários:</strong> Menor precisão (~10-30%) que estações profissionais (~2-5%)</li>
               <li><strong>Localização:</strong> Um sensor em uma rua movimentada ≠ sensor em parque — geograficamente representativo</li>
@@ -286,7 +274,7 @@ export default function SensorExplainer() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">✅ Validação de Dados</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">{t('sensors.validation')}</h3>
             <p className="text-sm text-gray-600">
               A EcoSense filtra sensores com dados inválidos (ex: temperatura -99°C, umidade 999%).
               Sensores que não reportam dados há >2 horas são marcados como inativos. Dados agregados por cidade
@@ -298,7 +286,7 @@ export default function SensorExplainer() {
 
       {/* Learning resources */}
       <div className="bg-white rounded-xl border border-gray-100 p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-5">Recursos para Aprender Mais</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-5">{t('sensors.resourcesTitle')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h3 className="font-semibold text-gray-900 mb-3">⛅ Open-Meteo</h3>
@@ -346,17 +334,13 @@ export default function SensorExplainer() {
 
       {/* Call to action */}
       <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-100 p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-3">Quer Contribuir?</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-3">{t('sensors.ctaTitle')}</h2>
         <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-          Se você tem interesse em monitoramento ambiental, considere instalar um sensor em sua região.
-          Qualquer pessoa pode montar um sensor Luftdaten/Sensor.Community e contribuir com dados para a comunidade global.
+          {t('sensors.ctaText')}
         </p>
         <div className="flex gap-3 justify-center flex-wrap">
-          <a href="https://sensor.community/en/sensors/airrohr/" target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">
-            Montar um Sensor
-          </a>
-          <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
-            Conhecer o Sensor.Community
+          <a href="https://sensor.community/en/" target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">
+            {t('sensors.ctaButton')}
           </a>
         </div>
       </div>

@@ -2,20 +2,22 @@
 // Full-page interactive sensor map
 
 import { Suspense, lazy, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSensors } from '../hooks/useEnvironmentalData.js';
 import { Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import { MapLegend } from '../components/map/SensorMap.jsx';
 
 const SensorMap = lazy(() => import('../components/map/SensorMap.jsx'));
 
-const SOURCE_OPTIONS = [
-  { value: '',                 label: 'Todas as Fontes' },
-  { value: 'sensor_community', label: 'Sensor.Community' },
-  { value: 'open_meteo',       label: 'Open-Meteo' },
-];
-
 export default function MapPage() {
+  const { t } = useTranslation();
   const [source, setSource] = useState('');
+
+  const SOURCE_OPTIONS = [
+    { value: '',                 label: t('map.allSources') },
+    { value: 'sensor_community', label: 'Sensor.Community' },
+    { value: 'open_meteo',       label: 'Open-Meteo' },
+  ];
   const { data: sensors = [], isLoading, error } = useSensors({ source: source || undefined, limit: 1000 });
 
   const filtered = source
@@ -26,9 +28,9 @@ export default function MapPage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">🗺️ Mapa de Sensores</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('map.title')}</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {filtered.length} sensores ativos exibidos
+            {t('map.activeSensors', { count: filtered.length })}
           </p>
         </div>
 
@@ -77,7 +79,7 @@ export default function MapPage() {
         })}
         <div className="bg-green-50 rounded-lg border border-green-100 p-3 text-center shadow-sm hover:shadow-md transition-shadow">
           <div className="text-2xl font-bold font-mono text-green-700">{filtered.length}</div>
-          <div className="text-xs text-green-600 mt-0.5">Exibindo</div>
+          <div className="text-xs text-green-600 mt-0.5">{t('map.showing')}</div>
         </div>
       </div>
     </div>

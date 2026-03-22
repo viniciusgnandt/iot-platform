@@ -79,7 +79,7 @@ export function Spinner({ size = 'md' }) {
 export function ErrorAlert({ message }) {
   return (
     <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
-      ⚠️ {message || 'Ocorreu um erro'}
+      ⚠️ {message}
     </div>
   );
 }
@@ -97,7 +97,7 @@ export function ClassificationBadge({ label, color }) {
 }
 
 /** Empty state */
-export function EmptyState({ message = 'Nenhum dado disponível', icon = '📡' }) {
+export function EmptyState({ message, icon = '📡' }) {
   return (
     <div className="text-center py-12 text-gray-400">
       <div className="text-4xl mb-3">{icon}</div>

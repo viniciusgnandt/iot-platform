@@ -3,6 +3,7 @@
 
 import { Suspense, lazy, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useSensors, useSensorsHistory, useSensorsHistoryFallback, useRanking, useCities } from '../hooks/useEnvironmentalData.js';
 import { formatRelativeTimeBRT, formatFullDateTimeBRT } from '../utils/dateFormatter.js';
 import { StatCard, ScoreRing, Spinner, ErrorAlert } from '../components/ui/index.jsx';
@@ -13,6 +14,7 @@ import { classify, formatMeasurement } from '../utils/icaud.js';
 const SensorMap = lazy(() => import('../components/map/SensorMap.jsx'));
 
 function GlobalStats({ cities = [], sensors = [] }) {
+  const { t } = useTranslation();
   const validCities = cities.filter(c => c.icaud?.score !== null);
   const avgScore = validCities.length > 0
     ? validCities.reduce((s, c) => s + c.icaud.score, 0) / validCities.length
@@ -30,15 +32,16 @@ function GlobalStats({ cities = [], sensors = [] }) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <StatCard label="Temperatura Média" value={mean(avgTemp, 'temperature')?.toFixed(1)} unit="°C"    icon="🌡️" color="#f59e0b" />
-      <StatCard label="Umidade Média"     value={mean(avgHum,  'humidity')?.toFixed(0)}    unit="%"     icon="💧" color="#3b82f6" />
-      <StatCard label="PM2.5 Médio"       value={mean(avgPm25, 'pm25')?.toFixed(1)}        unit="µg/m³" icon="🌫️" color="#8b5cf6" />
-      <StatCard label="Velocidade Vento"  value={mean(avgWind, 'windSpeed')?.toFixed(1)}   unit="m/s"   icon="💨" color="#06b6d4" />
+      <StatCard label={t('stats.avgTemp')}     value={mean(avgTemp, 'temperature')?.toFixed(1)} unit="°C"    icon="🌡️" color="#f59e0b" />
+      <StatCard label={t('stats.avgHumidity')} value={mean(avgHum,  'humidity')?.toFixed(0)}    unit="%"     icon="💧" color="#3b82f6" />
+      <StatCard label={t('stats.avgPm25')}     value={mean(avgPm25, 'pm25')?.toFixed(1)}        unit="µg/m³" icon="🌫️" color="#8b5cf6" />
+      <StatCard label={t('stats.windSpeed')}   value={mean(avgWind, 'windSpeed')?.toFixed(1)}   unit="m/s"   icon="💨" color="#06b6d4" />
     </div>
   );
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [timePeriod, setTimePeriod] = useState('live');
 
   const { data: liveSensors = [], isLoading: sensorsLoading } = useSensors({ limit: 500 });
@@ -80,39 +83,39 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Cabeçalho */}
+      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Painel Ambiental</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
           <p className="text-gray-500 text-sm mt-1">
             {isHistoryMode
-              ? `Médias históricas (${timePeriod === 'week' ? '7 dias' : '30 dias'}) de ${sensorsReady.length} sensores em ${cities.length} cidades`
+              ? t('dashboard.subtitleHistory', { period: timePeriod === 'week' ? t('dashboard.week') : t('dashboard.month'), sensors: sensorsReady.length, cities: cities.length })
               : usingFallback
-                ? `Exibindo dados históricos recentes (${sensorsReady.length} sensores) — dados ao vivo ainda carregando`
-                : `Dados em tempo real de ${sensorsReady.length} sensores ativos em ${cities.length} cidades`
+                ? t('dashboard.subtitleFallback', { sensors: sensorsReady.length })
+                : t('dashboard.subtitleLive', { sensors: sensorsReady.length, cities: cities.length })
             }
           </p>
           {lastReadingAt && (
             <span
-              title={`Última leitura: ${formatFullDateTimeBRT(lastReadingAt)} (BRT)`}
+              title={`${formatFullDateTimeBRT(lastReadingAt)} (BRT)`}
               className="inline-flex items-center gap-1 mt-1 text-xs text-gray-500 cursor-help"
             >
-              🕐 Atualizado {formatRelativeTimeBRT(lastReadingAt)}
+              🕐 {t('backend.updatedAgo', { time: formatRelativeTimeBRT(lastReadingAt) })}
             </span>
           )}
           {usingFallback && (
             <span className="inline-flex items-center gap-1 mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-              ⏳ Aguardando dados ao vivo — exibindo histórico recente
+              {t('dashboard.fallbackBadge')}
             </span>
           )}
         </div>
         <div className="flex-shrink-0">
           <ScoreRing score={globalAvgScore} size={100} />
-          <p className="text-xs text-center text-gray-400 mt-1">ICAU-D Global</p>
+          <p className="text-xs text-center text-gray-400 mt-1">{t('dashboard.icaudGlobal')}</p>
         </div>
       </div>
 
-      {/* Filtros de Período */}
+      {/* Period Filters */}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setTimePeriod('live')}
@@ -122,7 +125,7 @@ export default function Dashboard() {
               : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
           }`}
         >
-          🔴 Ao Vivo
+          {t('periods.live')}
         </button>
         <button
           onClick={() => setTimePeriod('week')}
@@ -132,7 +135,7 @@ export default function Dashboard() {
               : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
           }`}
         >
-          📅 Últimos 7 Dias
+          {t('periods.week')}
         </button>
         <button
           onClick={() => setTimePeriod('month')}
@@ -142,18 +145,18 @@ export default function Dashboard() {
               : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
           }`}
         >
-          📊 Último Mês
+          {t('periods.month')}
         </button>
       </div>
 
       {isLoading ? <Spinner /> : <GlobalStats cities={cities} sensors={sensorsReady} />}
 
-      {/* Mapa */}
+      {/* Map */}
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-3">
-          🗺️ {isHistoryMode
-            ? `Mapa — Média ${timePeriod === 'week' ? '7 dias' : '30 dias'}`
-            : usingFallback ? 'Mapa — Dados Históricos Recentes' : 'Mapa de Sensores ao Vivo'
+          {isHistoryMode
+            ? t('dashboard.mapHistory', { period: timePeriod === 'week' ? t('dashboard.week') : t('dashboard.month') })
+            : t('dashboard.mapLive')
           }
         </h2>
         <Suspense fallback={<Spinner />}>
@@ -163,7 +166,7 @@ export default function Dashboard() {
             <div className="h-[450px] bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center text-gray-400">
               <div className="text-center">
                 <div className="text-4xl mb-2">🗺️</div>
-                <p className="text-sm">Aguardando dados dos sensores…</p>
+                <p className="text-sm">{t('common.loading')}</p>
               </div>
             </div>
           ) : (
@@ -172,14 +175,14 @@ export default function Dashboard() {
         </Suspense>
       </div>
 
-      {/* Gráficos + Top 10 */}
+      {/* Charts + Top 10 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">🏙️ Top Cidades por ICAU-D</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-4">{t('dashboard.topCities')}</h2>
           {rankingStillLoading || ranking.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 gap-2">
               <div className="animate-spin text-3xl">⚙️</div>
-              <p className="text-sm">Carregando ranking…</p>
+              <p className="text-sm">{t('common.loading')}</p>
             </div>
           ) : (
             <TopCitiesChart cities={ranking} />
@@ -187,11 +190,11 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">📊 Distribuição por Classificação</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-4">{t('dashboard.distribution')}</h2>
           {citiesLoading || cities.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 gap-2">
               <div className="animate-spin text-3xl">⚙️</div>
-              <p className="text-sm">Carregando cidades…</p>
+              <p className="text-sm">{t('common.loading')}</p>
             </div>
           ) : (
             <ClassificationDonut cities={cities} />
@@ -202,9 +205,9 @@ export default function Dashboard() {
       {/* Top 10 ranking */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-800">🏆 Top 10 Cidades</h2>
+          <h2 className="text-base font-semibold text-gray-800">{t('dashboard.top10')}</h2>
           <Link to="/ranking" className="text-sm text-green-600 hover:text-green-700 font-medium">
-            Ver ranking completo →
+            {t('dashboard.viewAll')}
           </Link>
         </div>
         {rankingStillLoading ? (
@@ -212,7 +215,7 @@ export default function Dashboard() {
         ) : ranking.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-3">
             <div className="animate-spin text-3xl">⚙️</div>
-            <p className="text-sm">Carregando dados… atualizando automaticamente</p>
+            <p className="text-sm">{t('common.loading')}</p>
           </div>
         ) : (
           <RankingTable cities={ranking} />

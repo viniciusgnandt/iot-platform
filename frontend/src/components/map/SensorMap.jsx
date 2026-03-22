@@ -2,6 +2,7 @@
 // Interactive Leaflet map showing sensor locations with ICAU-D color coding
 
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { useTranslation } from 'react-i18next';
 import { getMarkerColor, classify, formatMeasurement } from '../../utils/icaud.js';
 import { formatFullDateTimeBRT, formatRelativeTimeBRT } from '../../utils/dateFormatter.js';
 import { ScoreBadge } from '../ui/index.jsx';
@@ -30,6 +31,7 @@ function FitBounds({ sensors }) {
  * Sensor map with circle markers colored by ICAU-D score
  */
 export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253], zoom = 4, height = '500px' }) {
+  const { t } = useTranslation();
   return (
     <div style={{ height }} className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
       <MapContainer
@@ -72,7 +74,7 @@ export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253],
                   <div className="text-xs text-gray-500 mb-2">
                     {sensor.location.city && !sensor.location.city.match(/^-?\d/)
                       ? sensor.location.city
-                      : 'Cidade desconhecida'}
+                      : t('map.popup.unknownCity')}
                   </div>
 
                   {/* Source + Device Type badges */}
@@ -103,14 +105,14 @@ export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253],
                         sensor.exposure === 'outdoor' ? 'bg-amber-100 text-amber-700' :
                         'bg-blue-100 text-blue-700'
                       }`}>
-                        {sensor.exposure === 'outdoor' ? '🏞️ Externo' : '🏠 Interno'}
+                        {sensor.exposure === 'outdoor' ? t('map.popup.outdoor') : t('map.popup.indoor')}
                       </span>
                     )}
 
                     {/* Sensor count */}
                     {sensor.sensorCount !== null && sensor.sensorCount !== undefined && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                        🔧 {sensor.sensorCount} sensor{sensor.sensorCount !== 1 ? 'es' : ''}
+                        🔧 {t('map.popup.sensorCount', { count: sensor.sensorCount, plural: sensor.sensorCount !== 1 ? 's' : '' })}
                       </span>
                     )}
                   </div>
@@ -120,10 +122,10 @@ export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253],
                     <span className="text-xs font-semibold text-gray-600">ICAU-D:</span>
                     {score !== null ? (
                       <span className="font-bold" style={{ color }}>
-                        {score.toFixed(1)} — {cls?.label}
+                        {score.toFixed(1)} — {t(`classifications.${cls?.label}`, cls?.label)}
                       </span>
                     ) : (
-                      <span className="text-gray-400 text-xs">N/D</span>
+                      <span className="text-gray-400 text-xs">{t('table.na')}</span>
                     )}
                   </div>
 
@@ -152,17 +154,19 @@ export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253],
 
 /** Map legend component */
 export function MapLegend() {
+  const { t } = useTranslation();
+
   const items = [
-    { color: '#22c55e', label: 'Muito Confortável (81-100)' },
-    { color: '#84cc16', label: 'Confortável (61-80)' },
-    { color: '#f59e0b', label: 'Desconfortável (31-60)' },
-    { color: '#ef4444', label: 'Insalubre (0-30)' },
-    { color: '#6b7280', label: 'Sem Dados' },
+    { color: '#22c55e', label: t('map.legend.veryComfortable') },
+    { color: '#84cc16', label: t('map.legend.comfortable') },
+    { color: '#f59e0b', label: t('map.legend.uncomfortable') },
+    { color: '#ef4444', label: t('map.legend.unhealthy') },
+    { color: '#6b7280', label: t('map.legend.noData') },
   ];
 
   return (
     <div className="bg-white/90 backdrop-blur rounded-lg border border-gray-200 p-3 shadow-sm">
-      <div className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">Índice ICAU-D</div>
+      <div className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">{t('map.legend.title')}</div>
       {items.map(item => (
         <div key={item.label} className="flex items-center gap-2 mb-1">
           <div

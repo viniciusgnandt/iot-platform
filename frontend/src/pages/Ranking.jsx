@@ -2,37 +2,34 @@
 // Full city ranking page with filtering
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRanking, useSensorsHistory, useSensorsHistoryFallback } from '../hooks/useEnvironmentalData.js';
 import { Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import RankingTable from '../components/ranking/RankingTable.jsx';
 import { CLASSIFICATIONS, classify } from '../utils/icaud.js';
 import { formatRelativeTimeBRT, formatFullDateTimeBRT } from '../utils/dateFormatter.js';
 
-// Mapeamento país → continente
+// Country → continent mapping (English keys to match i18n)
 const COUNTRY_CONTINENT = {
-  BR: 'América do Sul',
-  DE: 'Europa', GB: 'Europa', FR: 'Europa', ES: 'Europa', IT: 'Europa',
-  NL: 'Europa', AT: 'Europa', PL: 'Europa', CZ: 'Europa', HU: 'Europa',
-  BE: 'Europa', CH: 'Europa', DK: 'Europa', SE: 'Europa', NO: 'Europa',
-  FI: 'Europa', PT: 'Europa', GR: 'Europa', IE: 'Europa', RO: 'Europa',
-  BG: 'Europa', HR: 'Europa', RS: 'Europa', MK: 'Europa', BA: 'Europa',
-  SK: 'Europa', SI: 'Europa', LT: 'Europa', LV: 'Europa', EE: 'Europa',
-  RU: 'Europa', UA: 'Europa', BY: 'Europa', AM: 'Europa',
+  BR: 'South America',
+  DE: 'Europe', GB: 'Europe', FR: 'Europe', ES: 'Europe', IT: 'Europe',
+  NL: 'Europe', AT: 'Europe', PL: 'Europe', CZ: 'Europe', HU: 'Europe',
+  BE: 'Europe', CH: 'Europe', DK: 'Europe', SE: 'Europe', NO: 'Europe',
+  FI: 'Europe', PT: 'Europe', GR: 'Europe', IE: 'Europe', RO: 'Europe',
+  BG: 'Europe', HR: 'Europe', RS: 'Europe', MK: 'Europe', BA: 'Europe',
+  SK: 'Europe', SI: 'Europe', LT: 'Europe', LV: 'Europe', EE: 'Europe',
+  RU: 'Europe', UA: 'Europe', BY: 'Europe', AM: 'Europe',
 };
 
-// Nomes legíveis dos países
-const COUNTRY_NAMES = {
-  BR: 'Brasil', DE: 'Alemanha', GB: 'Reino Unido', FR: 'França',
-  ES: 'Espanha', IT: 'Itália', NL: 'Holanda', AT: 'Áustria',
-  PL: 'Polônia', CZ: 'Tchéquia', HU: 'Hungria', BE: 'Bélgica',
-  CH: 'Suíça', DK: 'Dinamarca', SE: 'Suécia', NO: 'Noruega',
-  FI: 'Finlândia', PT: 'Portugal', GR: 'Grécia', IE: 'Irlanda',
-  RO: 'Romênia', BG: 'Bulgária', HR: 'Croácia', RS: 'Sérvia',
-  MK: 'Macedônia do Norte', RU: 'Rússia', UA: 'Ucrânia', AM: 'Armênia',
-};
+// Country codes (names resolved via i18n in component)
+const COUNTRY_CODES = [
+  'BR','DE','GB','FR','ES','IT','NL','AT','PL','CZ','HU','BE',
+  'CH','DK','SE','NO','FI','PT','GR','IE','RO','BG','HR','RS',
+  'MK','RU','UA','AM',
+];
 
 function getContinent(country) {
-  return COUNTRY_CONTINENT[country] || 'Outros';
+  return COUNTRY_CONTINENT[country] || 'Other';
 }
 
 /**
@@ -87,6 +84,7 @@ function aggregateSensorsToCities(sensors) {
 }
 
 export default function Ranking() {
+  const { t } = useTranslation();
   const [timePeriod, setTimePeriod]     = useState('live');
   const [limit, setLimit]               = useState(50);
   const [filterClass, setFilter]        = useState('');
@@ -141,10 +139,10 @@ export default function Ranking() {
     const continents = [...continentSet].sort();
     const countriesInContinent = [...countrySet]
       .filter(code => !filterContinent || getContinent(code) === filterContinent)
-      .sort((a, b) => (COUNTRY_NAMES[a] || a).localeCompare(COUNTRY_NAMES[b] || b));
+      .sort((a, b) => (t(`countries.${a}`, a)).localeCompare(t(`countries.${b}`, b)));
 
     return { continents, countriesInContinent };
-  }, [cities, filterContinent]);
+  }, [cities, filterContinent, t]);
 
   const filtered = cities.filter(c => {
     if (filterClass && c.icaud?.classification?.label !== filterClass) return false;
@@ -158,26 +156,26 @@ export default function Ranking() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">🏆 Ranking de Cidades</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('ranking.title')}</h1>
           <p className="text-gray-500 text-sm mt-1">
             {isHistoryMode
-              ? `Médias históricas (${timePeriod === 'week' ? '7 dias' : '30 dias'}) — ${cities.length} cidades`
+              ? t('ranking.subtitleHistory', { period: timePeriod === 'week' ? t('ranking.week') : t('ranking.month'), cities: cities.length })
               : usingFallback
-                ? `Exibindo dados históricos recentes (${cities.length} cidades) — dados ao vivo ainda carregando`
-                : `Cidades classificadas pelo Índice de Conforto Ambiental Urbano (ICAU-D)`
+                ? t('ranking.subtitleFallback', { cities: cities.length })
+                : t('ranking.subtitleLive')
             }
           </p>
           {lastReadingAt && (
             <span
-              title={`Última leitura: ${formatFullDateTimeBRT(lastReadingAt)} (BRT)`}
+              title={`${formatFullDateTimeBRT(lastReadingAt)} (BRT)`}
               className="inline-flex items-center gap-1 mt-1 text-xs text-gray-500 cursor-help"
             >
-              🕐 Atualizado {formatRelativeTimeBRT(lastReadingAt)}
+              🕐 {t('backend.updatedAgo', { time: formatRelativeTimeBRT(lastReadingAt) })}
             </span>
           )}
           {usingFallback && (
             <span className="inline-flex items-center gap-1 mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-              ⏳ Aguardando dados ao vivo — exibindo histórico recente
+              {t('ranking.fallbackBadge')}
             </span>
           )}
         </div>
@@ -185,11 +183,11 @@ export default function Ranking() {
           onClick={() => refetch()}
           className="text-sm bg-green-50 text-green-700 hover:bg-green-100 px-4 py-2 rounded-lg font-medium transition-colors"
         >
-          ↻ Atualizar
+          {t('ranking.refresh')}
         </button>
       </div>
 
-      {/* Filtros de Período */}
+      {/* Period Filters */}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setTimePeriod('live')}
@@ -199,7 +197,7 @@ export default function Ranking() {
               : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
           }`}
         >
-          🔴 Ao Vivo
+          {t('periods.live')}
         </button>
         <button
           onClick={() => setTimePeriod('week')}
@@ -209,7 +207,7 @@ export default function Ranking() {
               : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
           }`}
         >
-          📅 Últimos 7 Dias
+          {t('periods.week')}
         </button>
         <button
           onClick={() => setTimePeriod('month')}
@@ -219,7 +217,7 @@ export default function Ranking() {
               : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
           }`}
         >
-          🗓️ Último Mês
+          {t('periods.month')}
         </button>
       </div>
 
@@ -231,9 +229,9 @@ export default function Ranking() {
             onChange={e => setLimit(Number(e.target.value))}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
           >
-            <option value={25}>Top 25</option>
-            <option value={50}>Top 50</option>
-            <option value={100}>Top 100</option>
+            <option value={25}>{t('ranking.top25')}</option>
+            <option value={50}>{t('ranking.top50')}</option>
+            <option value={100}>{t('ranking.top100')}</option>
           </select>
         )}
 
@@ -242,9 +240,9 @@ export default function Ranking() {
           onChange={e => { setContinent(e.target.value); setCountry(''); }}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
         >
-          <option value="">Todos os continentes</option>
+          <option value="">{t('ranking.allContinents')}</option>
           {continents.map(c => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>{t(`countries.continents.${c}`, c)}</option>
           ))}
         </select>
 
@@ -253,9 +251,9 @@ export default function Ranking() {
           onChange={e => setCountry(e.target.value)}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
         >
-          <option value="">Todos os países</option>
+          <option value="">{t('ranking.allCountries')}</option>
           {countriesInContinent.map(code => (
-            <option key={code} value={code}>{COUNTRY_NAMES[code] || code}</option>
+            <option key={code} value={code}>{t(`countries.${code}`, code)}</option>
           ))}
         </select>
 
@@ -264,14 +262,14 @@ export default function Ranking() {
           onChange={e => setFilter(e.target.value)}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
         >
-          <option value="">Todas as classificações</option>
+          <option value="">{t('ranking.allClassifications')}</option>
           {CLASSIFICATIONS.map(c => (
-            <option key={c.label} value={c.label}>{c.label}</option>
+            <option key={c.label} value={c.label}>{t(`classifications.${c.label}`, c.label)}</option>
           ))}
         </select>
 
         <div className="text-sm text-gray-500 flex items-center">
-          Exibindo {filtered.length} cidades
+          {t('ranking.showing', { count: filtered.length })}
         </div>
       </div>
 
@@ -280,14 +278,14 @@ export default function Ranking() {
         {isLoadingData ? (
           <div className="flex flex-col items-center justify-center py-14 text-gray-400 gap-3">
             <div className="animate-spin text-4xl">⚙️</div>
-            <p className="text-sm font-medium">Carregando dados ambientais…</p>
-            <p className="text-xs text-gray-300">Atualizando automaticamente</p>
+            <p className="text-sm font-medium">{t('ranking.loadingData')}</p>
+            <p className="text-xs text-gray-300">{t('ranking.autoUpdate')}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             {cities.length === 0
-              ? 'Aguardando dados — o backend está coletando informações das APIs externas…'
-              : 'Nenhuma cidade corresponde ao filtro atual'
+              ? t('ranking.waiting')
+              : t('ranking.noMatch')
             }
           </div>
         ) : (
@@ -297,14 +295,14 @@ export default function Ranking() {
 
       {/* Classification legend */}
       <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Guia de Classificação ICAU-D</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">{t('ranking.legend')}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {CLASSIFICATIONS.map(cls => (
             <div key={cls.label} className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cls.color }} />
               <div>
-                <div className="text-sm font-medium text-gray-700">{cls.label}</div>
-                <div className="text-xs text-gray-400">{cls.min}–{cls.max} pontos</div>
+                <div className="text-sm font-medium text-gray-700">{t(`classifications.${cls.label}`, cls.label)}</div>
+                <div className="text-xs text-gray-400">{t('common.range', { min: cls.min, max: cls.max })}</div>
               </div>
             </div>
           ))}

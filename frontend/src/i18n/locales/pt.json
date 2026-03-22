@@ -1,0 +1,298 @@
+{
+  "nav": {
+    "dashboard": "Painel",
+    "ranking": "Ranking",
+    "map": "Mapa",
+    "sensors": "Sensores",
+    "howItWorks": "Como Funciona",
+    "platform": "Plataforma IoT"
+  },
+  "footer": {
+    "tagline": "EcoSense Plataforma IoT — Dados ambientais de Sensor.Community & Open-Meteo",
+    "index": "Índice ICAU-D"
+  },
+  "backend": {
+    "connecting": "Conectando ao backend...",
+    "unavailable": "Backend indisponível",
+    "realtimeDisabled": "dados em tempo real desabilitados.",
+    "makeItRun": "Certifique-se de que o backend está rodando:",
+    "updatedAgo": "Atualizado {{time}}"
+  },
+  "periods": {
+    "live": "🔴 Ao Vivo",
+    "week": "📅 Últimos 7 Dias",
+    "month": "🗓️ Último Mês"
+  },
+  "dashboard": {
+    "title": "Painel Ambiental",
+    "subtitleLive": "Dados em tempo real de {{sensors}} sensores ativos em {{cities}} cidades",
+    "subtitleHistory": "Médias históricas ({{period}}) de {{sensors}} sensores em {{cities}} cidades",
+    "subtitleFallback": "Exibindo dados históricos recentes ({{sensors}} sensores) — dados ao vivo ainda carregando",
+    "fallbackBadge": "⏳ Aguardando dados ao vivo — exibindo histórico recente",
+    "icaudGlobal": "ICAU-D Global",
+    "mapLive": "🗺️ Mapa de Sensores ao Vivo",
+    "mapHistory": "🗺️ Mapa de Sensores — Média {{period}}",
+    "topCities": "🏙️ Top Cidades por ICAU-D",
+    "distribution": "📊 Distribuição por Classificação",
+    "top10": "🏆 Top 10 Cidades",
+    "viewAll": "Ver ranking completo →",
+    "week": "7 dias",
+    "month": "30 dias"
+  },
+  "stats": {
+    "avgTemp": "Temperatura Média",
+    "avgHumidity": "Umidade Média",
+    "avgPm25": "PM2.5 Médio",
+    "windSpeed": "Velocidade Vento"
+  },
+  "ranking": {
+    "title": "🏆 Ranking de Cidades",
+    "subtitleLive": "Cidades classificadas pelo Índice de Conforto Ambiental Urbano (ICAU-D)",
+    "subtitleHistory": "Médias históricas ({{period}}) — {{cities}} cidades",
+    "subtitleFallback": "Exibindo dados históricos recentes ({{cities}} cidades) — dados ao vivo ainda carregando",
+    "fallbackBadge": "⏳ Aguardando dados ao vivo — exibindo histórico recente",
+    "refresh": "↻ Atualizar",
+    "showing": "Exibindo {{count}} cidades",
+    "allContinents": "Todos os continentes",
+    "allCountries": "Todos os países",
+    "allClassifications": "Todas as classificações",
+    "top25": "Top 25",
+    "top50": "Top 50",
+    "top100": "Top 100",
+    "legend": "Guia de Classificação ICAU-D",
+    "loadingData": "Carregando dados ambientais…",
+    "autoUpdate": "Atualizando automaticamente",
+    "noMatch": "Nenhuma cidade corresponde ao filtro atual",
+    "waiting": "Aguardando dados — o backend está coletando informações das APIs externas…",
+    "week": "7 dias",
+    "month": "30 dias"
+  },
+  "table": {
+    "rank": "#",
+    "city": "Cidade",
+    "icaud": "ICAU-D",
+    "status": "Status",
+    "temp": "Temp.",
+    "humidity": "Umidade",
+    "pm25": "PM2.5",
+    "wind": "Vento",
+    "sensors": "Sensores",
+    "lastReading": "Última Leitura",
+    "na": "N/D",
+    "sensorsTooltip": "Sensores:\n{{list}}"
+  },
+  "map": {
+    "title": "🗺️ Mapa de Sensores",
+    "activeSensors": "{{count}} sensores ativos exibidos",
+    "allSources": "Todas as Fontes",
+    "showing": "Exibindo",
+    "legend": {
+      "title": "Índice ICAU-D",
+      "veryComfortable": "Muito Confortável (81-100)",
+      "comfortable": "Confortável (61-80)",
+      "uncomfortable": "Desconfortável (31-60)",
+      "unhealthy": "Insalubre (0-30)",
+      "noData": "Sem Dados"
+    },
+    "popup": {
+      "unknownCity": "Cidade desconhecida",
+      "outdoor": "🏞️ Externo",
+      "indoor": "🏠 Interno",
+      "sensorCount": "{{count}} sensor{{plural}}"
+    }
+  },
+  "cityDetail": {
+    "breadcrumbDashboard": "Painel",
+    "breadcrumbRanking": "Ranking",
+    "activeSensors": "{{count}} sensor{{plural}} ativo{{plural}}",
+    "unknownCountry": "País desconhecido",
+    "icaudComposition": "Composição do Índice ICAU-D",
+    "currentMeasurements": "Medições Atuais",
+    "location": "📍 Localização",
+    "finalScore": "Pontuação ICAU-D Final",
+    "lastReading": "🕐 Última leitura {{relative}} — {{full}}",
+    "measurements": {
+      "temperature": "Temperatura",
+      "humidity": "Umidade",
+      "pm25": "PM2.5",
+      "pm10": "PM10",
+      "windSpeed": "Vel. do Vento"
+    }
+  },
+  "cityMap": {
+    "aggregatedMeasurements": "Medições Agregadas",
+    "availableComponents": "Componentes Disponíveis",
+    "sensorsSectionTitle": "📡 Sensores",
+    "deviceType": "Tipo:",
+    "noSensorsNearby": "Nenhum sensor próximo encontrado",
+    "descriptions": {
+      "temperature": "🌡️ Temperatura — Mede o calor ambiente em °C",
+      "humidity": "💧 Umidade — Porcentagem de vapor de água no ar (%)",
+      "pm25": "🌫️ PM2.5 — Partículas finas (poluição) em µg/m³",
+      "pm10": "🌫️ PM10 — Partículas maiores (poeira) em µg/m³",
+      "windSpeed": "💨 Velocidade do Vento — Força do vento em m/s"
+    }
+  },
+  "sensors": {
+    "title": "O que são Sensores IoT?",
+    "subtitle": "Sensores IoT (Internet of Things) são pequenos dispositivos eletrônicos que medem continuamente condições ambientais e enviam dados pela internet em tempo real.",
+    "howTitle": "Como os Sensores Funcionam",
+    "steps": {
+      "1": { "title": "Medição Física", "desc": "O sensor detecta um parâmetro físico (temperatura, partícula, umidade) usando um transdutor específico (ex: termistor, fotodetector)." },
+      "2": { "title": "Conversão Analógico→Digital", "desc": "O sinal analógico é convertido para digital por um ADC (Conversor Analógico-Digital). A resolução define a precisão da medição (ex: 12 bits = 4096 valores)." },
+      "3": { "title": "Processamento no Microcontrolador", "desc": "Um microcontrolador embarcado (ESP8266, Arduino) lê o valor do ADC, aplica fórmulas de calibração e transmite via Wi-Fi ou serial." },
+      "4": { "title": "Transmissão pela Internet", "desc": "Os dados são enviados para APIs coletoras (Sensor.Community, Open-Meteo) via HTTP/MQTT. Intervalo: 1 a 5 minutos." },
+      "5": { "title": "Coleta e Armazenamento", "desc": "O backend EcoSense busca os dados a cada hora, armazena no MongoDB Atlas e calcula o índice ICAU-D para cada sensor." }
+    },
+    "typesTitle": "Tipos de Sensores na EcoSense",
+    "network1Title": "🌍 Sensor.Community — Luftdaten / NOVA",
+    "network1Desc": "Rede cidadã com milhares de sensores de baixo custo externos distribuídos globalmente. Foco em qualidade do ar e ambiente urbano.",
+    "network2Title": "⛅ Open-Meteo — Estações Meteorológicas",
+    "network2Desc": "API de previsão meteorológica global que agrega dados de estações meteorológicas oficiais. Cobre 48 cidades fixas (18 BR + 30 EU).",
+    "maintenanceTitle": "Manutenção e Precisão",
+    "maintenanceRequired": "🔧 Manutenção Necessária",
+    "maintenanceItems": ["Limpeza periódica do sensor (poeira se acumula na câmara óptica)", "Calibração de fábrica anual", "Proteção contra intempéries (para sensores externos)", "Fonte de energia estável (variações de tensão afetam leituras)"],
+    "limitations": "⚠️ Limitações",
+    "limitationItems": ["Sensores de baixo custo: precisão de ±15-20% vs. estações de referência", "Interferência óptica em neblina ou alta umidade (>90%)", "Sensibilidade cruzada: alguns gases podem interferir na medição de PM"],
+    "validation": "✅ Validação de Dados",
+    "validationItems": ["EcoSense filtra sensores inativos há >2 horas", "Leituras fora de limites físicos são descartadas (temp <-50°C ou >60°C)", "Agregação por cidade usa média aritmética, reduzindo impacto de outliers isolados"],
+    "resourcesTitle": "Saiba Mais",
+    "ctaTitle": "Quer Contribuir?",
+    "ctaText": "Junte-se à Sensor.Community e instale um sensor em sua casa. Todos os dados são públicos e ajudam a melhorar o monitoramento da qualidade do ar globalmente.",
+    "ctaButton": "Acessar Sensor.Community →",
+    "sensorTypes": {
+      "nova": { "name": "Nova SDS011", "type": "Contador óptico de partículas", "precision": "±15 µg/m³ ou ±15%", "measures": "PM2.5 e PM10" },
+      "dht22": { "name": "DHT22", "type": "Capacitivo + termistor", "precision": "±0,5°C / ±2% UR", "measures": "Temperatura e Umidade" },
+      "meteo": { "name": "Estações Meteorológicas (Open-Meteo)", "type": "Redes meteorológicas oficiais", "precision": "Dados de modelo + estação", "measures": "Temperatura, Umidade, Vento" }
+    },
+    "sensorFields": {
+      "type": "Tipo",
+      "precision": "Precisão",
+      "measures": "Mede"
+    }
+  },
+  "explainer": {
+    "title": "Como Funciona a Plataforma",
+    "subtitle": "EcoSense é uma plataforma de monitoramento ambiental em tempo real. Ela coleta dados de sensores distribuídos globalmente, calcula o índice ICAU-D, e exibe em mapas, gráficos e rankings.",
+    "tabArchitecture": "Arquitetura da Plataforma",
+    "tabIcaud": "ICAU-D — Índice de Conforto",
+    "tabSources": "Fontes de Dados",
+    "architecture": {
+      "title": "Arquitetura da Plataforma",
+      "overviewTitle": "Visão Geral",
+      "overviewText1": "EcoSense é uma aplicação full-stack containerizada composta por backend Node.js e frontend React, comunicando-se via REST API. Toda a persistência de dados é feita no MongoDB Atlas (nuvem).",
+      "stackCards": {
+        "backend": { "icon": "⚙️", "label": "Backend", "value": "Node.js + Express" },
+        "frontend": { "icon": "🖥️", "label": "Frontend", "value": "React + Vite" },
+        "db": { "icon": "📦", "label": "Banco de Dados", "value": "MongoDB Atlas" },
+        "deploy": { "icon": "🐳", "label": "Deploy", "value": "Docker + Portainer" }
+      },
+      "flowTitle": "Fluxo de Dados — 7 Etapas",
+      "steps": {
+        "1": { "icon": "🌐", "title": "Coleta nas APIs Externas", "desc": "Na startup e a cada 1 hora, o backend busca dados de 2 fontes públicas: Sensor.Community (qualidade do ar — ~200 sensores globais) e Open-Meteo (meteorologia — 48 cidades do Brasil e Europa). Retry automático com backoff em caso de falha de rede." },
+        "2": { "icon": "🔄", "title": "Normalização para Schema Unificado", "desc": "Dados heterogêneos das fontes são convertidos para um objeto sensor padrão: id, source, location {lat, lon, city, country}, measurements {temperature, humidity, pm25, pm10, windSpeed}, lastSeen. Sensores com dados de mais de 2 horas são descartados." },
+        "3": { "icon": "📐", "title": "Cálculo do Índice ICAU-D", "desc": "Para cada sensor ativo, calcula-se o ICAU-D com pesos dinâmicos: temperatura (40%), umidade (30%), qualidade do ar/PM2.5 (20%), vento (10%). Se um componente não tem dado, o peso é redistribuído proporcionalmente entre os componentes disponíveis." },
+        "4": { "icon": "💾", "title": "Persistência no MongoDB Atlas", "desc": "Todas as leituras são salvas na coleção SensorReading com TTL de 30 dias (índice automático de expiração). Isso forma o histórico que alimenta os filtros '7 dias' e '30 dias' do Painel e do Ranking." },
+        "5": { "icon": "🗺️", "title": "Reverse Geocoding via Nominatim", "desc": "Coordenadas dos sensores da Sensor.Community são convertidas em nomes de cidades usando a API Nominatim (OpenStreetMap). Rate limit de 1 req/s é respeitado com fila serializada. Resultados são armazenados em MongoDB (coleção GeocodeEntry) — nunca re-consultados para a mesma coordenada." },
+        "6": { "icon": "🏙️", "title": "Agregação e Cache por Cidade", "desc": "Sensores com cidade resolvida são agrupados. Para cada cidade: média das medições, ICAU-D agregado, ranking por score. Resultados são cacheados em MongoDB (coleção CacheEntry, TTL 1 hora) para resposta instantânea ao frontend." },
+        "7": { "icon": "🖥️", "title": "Entrega ao Frontend via REST API", "desc": "Frontend React consulta /api/sensors, /api/cities e /api/cities/ranking. Em produção, as requisições passam por Nginx (proxy reverso). React Query gerencia cache no cliente (55 min stale time). Se os dados ao vivo ainda não chegaram, o frontend usa automaticamente o histórico recente do MongoDB." }
+      },
+      "diagramTitle": "Diagrama Técnico",
+      "stackTitle": "Stack Tecnológica",
+      "backendStack": { "title": "⚙️ Backend", "items": ["Node.js + Express — servidor REST API", "Mongoose — ODM para MongoDB", "Axios — cliente HTTP com retry", "Scheduler nativo — setInterval 1h (sem cron externo)", "express-rate-limit — proteção contra abuso", "Morgan + Winston — logging"] },
+      "frontendStack": { "title": "🖥️ Frontend", "items": ["React 18 + Vite — SPA com build otimizado", "React Query — cache, retry e sincronização de dados", "React Router — navegação SPA", "Leaflet + React-Leaflet — mapas interativos", "Recharts — gráficos e visualizações", "Tailwind CSS — estilização utilitária"] },
+      "infraStack": { "title": "📦 Dados e Infraestrutura", "items": ["MongoDB Atlas — cloud database (único storage)", "TTL Index — auto-delete leituras com +30 dias", "Docker + Compose — containers backend + frontend", "Nginx — serve o React e proxeia /api para o backend", "Portainer — deploy e gerenciamento dos containers"] },
+      "securityStack": { "title": "🔒 Segurança e Resiliência", "items": ["Rate Limiting — 100 req/min por IP", "CORS — origem validada (iot-platform.viniciusgnandt.com.br)", "Trust Proxy — X-Forwarded-For correto atrás do Nginx", "Retry com backoff — APIs externas com 3 tentativas", "Fallback de cache — memória local se MongoDB indisponível", "Dados públicos — nenhum dado pessoal de usuário coletado"] },
+      "mongoTitle": "Estrutura do MongoDB Atlas",
+      "collections": {
+        "sensorReading": { "icon": "📊", "name": "SensorReading", "desc": "Histórico de todas as leituras de sensores", "fields": ["sensorId, source, name", "location {lat, lon, city, country}", "measurements {temp, humidity, pm25, windSpeed}", "icaud {score, classification}", "recordedAt (TTL: 30 dias)"] },
+        "cacheEntry": { "icon": "💾", "name": "CacheEntry", "desc": "Cache de respostas para o frontend", "fields": ["key (sensors:all, cities:aggregated,", "cities:ranking:50)", "value (objeto JSON completo)", "expiresAt (TTL: 1 hora)", "Índice TTL auto-delete"] },
+        "geocodeEntry": { "icon": "🗺️", "name": "GeocodeEntry", "desc": "Cache permanente de reverse geocoding", "fields": ["key (\"lat,lon\" com 2 casas decimais)", "city (nome da cidade resolvida)", "Permanente — nunca expira", "Evita re-consultar Nominatim", "~550+ entradas acumuladas"] }
+      },
+      "sourcesTitle": "Fontes de Dados"
+    },
+    "icaud": {
+      "title": "ICAU-D — Índice de Conforto Ambiental Urbano Dinâmico",
+      "whatTitle": "O que é ICAU-D?",
+      "whatText1": "ICAU-D significa Índice de Conforto Ambiental Urbano Dinâmico. É um índice que mede o conforto ambiental em áreas urbanas combinando múltiplas variáveis ambientais em um único valor entre 0 e 100.",
+      "whatText2": "Quanto maior o índice, melhor o conforto. Um score de 80+ significa que o ambiente é muito confortável para atividades ao ar livre.",
+      "componentsTitle": "Os 4 Componentes",
+      "exampleTitle": "Exemplo de Cálculo",
+      "exampleSubtitle": "Com: Temperatura 25°C, Umidade 60%, PM2.5 15 µg/m³, Vento 3 m/s",
+      "exampleResult": "Resultado: {{score}} — {{label}}",
+      "weightsTitle": "Distribuição dos Pesos",
+      "dynamicTitle": "Rebalanceamento Dinâmico de Pesos",
+      "dynamicText": "Quando sensores não têm todos os 4 componentes (comum no Open-Meteo, que não tem PM2.5), o ICAU-D redistribui automaticamente os pesos proporcionalmente entre os componentes disponíveis. Isso evita que sensores com dados parciais sempre recebam scores baixos.",
+      "dynamicExample": "Exemplo: Sem dados de PM2.5 (peso 0,2), os componentes restantes ficam: temperatura (0,4/0,8=50%), umidade (0,3/0,8=37,5%), vento (0,1/0,8=12,5%).",
+      "scaleTitle": "Escala de Classificação",
+      "components": {
+        "temperature": { "icon": "🌡️", "name": "Temperatura", "ideal": "Entre 18°C e 26°C", "formula": "se T entre 18-26: score = 100\nse T < 18: score = 100 - (18 - T) × 4\nse T > 26: score = 100 - (T - 26) × 4\nIntervalo: [0, 100]" },
+        "humidity": { "icon": "💧", "name": "Umidade", "ideal": "Entre 40% e 60%", "formula": "se U entre 40-60: score = 100\nse U < 40: score = 100 - (40 - U) × 2\nse U > 60: score = 100 - (U - 60) × 2\nIntervalo: [0, 100]" },
+        "airQuality": { "icon": "🌫️", "name": "Qualidade do Ar (PM2.5)", "ideal": "PM2.5 < 10 µg/m³ (OMS)", "formula": "score = max(0, 100 - PM2.5 × 2)\nIntervalo: [0, 100]\n0 µg/m³ → 100 | 50 µg/m³ → 0" },
+        "wind": { "icon": "💨", "name": "Velocidade do Vento", "ideal": "Entre 1 e 3 m/s", "formula": "se V entre 1-3: score = 100\nse V < 1: score = 100 - (1 - V) × 20\nse V > 3: score = 100 - (V - 3) × 20\nIntervalo: [0, 100]" }
+      },
+      "scoreLabel": "Score normalizado"
+    },
+    "sources": {
+      "title": "Fontes de Dados",
+      "subtitle": "EcoSense utiliza 2 APIs públicas gratuitas, sem necessidade de chave de API.",
+      "freeTag": "API Gratuita",
+      "noKeyRequired": "Sem chave necessária",
+      "sc": {
+        "name": "Sensor.Community",
+        "type": "Rede Cidadã de Qualidade do Ar",
+        "desc": "Rede descentralizada de milhares de sensores de baixo custo instalados por cidadãos globalmente. Foco em PM2.5, PM10, temperatura e umidade.",
+        "coverage": "Global (maioria na Europa)",
+        "update": "1–5 min por sensor",
+        "data": "PM2.5, PM10, Temperatura, Umidade",
+        "sensors": "~200 em uso pelo EcoSense"
+      },
+      "meteo": {
+        "name": "Open-Meteo",
+        "type": "API Meteorológica Oficial",
+        "desc": "API meteorológica open source que agrega dados de estações oficiais globais. Gratuita para uso não-comercial.",
+        "coverage": "18 cidades BR + 30 EU",
+        "update": "Horária",
+        "data": "Temperatura, Umidade, Velocidade do Vento",
+        "sensors": "48 cidades fixas"
+      },
+      "coverageLabel": "Cobertura",
+      "updateLabel": "Atualização",
+      "dataLabel": "Dados",
+      "sensorsLabel": "Sensores EcoSense",
+      "summaryTitle": "Resumo",
+      "summaryItems": ["Todas as fontes de dados são gratuitas e não requerem chaves de API", "EcoSense combina ambas as fontes para cobertura global abrangente", "Sensor.Community fornece medições reais de sensores em locais reais", "Open-Meteo garante cobertura para cidades importantes sem sensores instalados"]
+    }
+  },
+  "classifications": {
+    "Very Comfortable": "Muito Confortável",
+    "Comfortable": "Confortável",
+    "Uncomfortable": "Desconfortável",
+    "Unhealthy": "Insalubre"
+  },
+  "countries": {
+    "continents": {
+      "South America": "América do Sul",
+      "Europe": "Europa",
+      "Other": "Outros"
+    },
+    "BR": "Brasil", "DE": "Alemanha", "GB": "Reino Unido", "FR": "França",
+    "ES": "Espanha", "IT": "Itália", "NL": "Holanda", "AT": "Áustria",
+    "PL": "Polônia", "CZ": "Tchéquia", "HU": "Hungria", "BE": "Bélgica",
+    "CH": "Suíça", "DK": "Dinamarca", "SE": "Suécia", "NO": "Noruega",
+    "FI": "Finlândia", "PT": "Portugal", "GR": "Grécia", "IE": "Irlanda",
+    "RO": "Romênia", "BG": "Bulgária", "HR": "Croácia", "RS": "Sérvia",
+    "MK": "Macedônia do Norte", "RU": "Rússia", "UA": "Ucrânia", "AM": "Armênia",
+    "US": "Estados Unidos"
+  },
+  "common": {
+    "loading": "Carregando dados ambientais…",
+    "autoUpdate": "Atualizando automaticamente",
+    "noData": "Nenhum dado disponível",
+    "error": "Ocorreu um erro",
+    "notFound": "Página não encontrada",
+    "backToDashboard": "← Voltar ao Painel",
+    "points": "pontos",
+    "range": "Faixa: {{min}}–{{max}} pontos"
+  }
+}

@@ -2,6 +2,7 @@
 // Interactive map showing cities with their sensor details
 
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { useTranslation } from 'react-i18next';
 import { getMarkerColor, classify, formatMeasurement } from '../../utils/icaud.js';
 import { formatRelativeTimeBRT, formatFullDateTimeBRT } from '../../utils/dateFormatter.js';
 import { ScoreBadge } from '../ui/index.jsx';
@@ -19,22 +20,14 @@ function MapController({ center, zoom }) {
   return null;
 }
 
-/**
- * Sensor measurement descriptions
- */
-const SENSOR_DESCRIPTIONS = {
-  temperature: '🌡️ Temperatura — Mede o calor ambiente em °C',
-  humidity: '💧 Umidade — Porcentagem de vapor de água no ar (%)',
-  pm25: '🌫️ PM2.5 — Partículas finas (poluição) em µg/m³',
-  pm10: '🌫️ PM10 — Partículas maiores (poeira) em µg/m³',
-  windSpeed: '💨 Velocidade do Vento — Força do vento em m/s',
-};
+// Sensor descriptions are now resolved via t('cityMap.descriptions.*') in component
 
 /**
  * City map with circle markers colored by ICAU-D score
  * Shows city details and sensor breakdown on hover
  */
 export default function CityMap({ cities = [], sensors = [], center = [-14.2350, -51.9253], zoom = 4, height = '500px' }) {
+  const { t } = useTranslation();
   return (
     <div style={{ height }} className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
       <MapContainer
@@ -93,30 +86,30 @@ export default function CityMap({ cities = [], sensors = [], center = [-14.2350,
                         <span className="font-bold text-lg" style={{ color }}>
                           {score.toFixed(1)}
                         </span>
-                        <span className="text-xs text-gray-600">{cls?.label}</span>
+                        <span className="text-xs text-gray-600">{t(`classifications.${cls?.label}`, cls?.label)}</span>
                       </div>
                     ) : (
-                      <span className="text-gray-400 text-xs">N/D</span>
+                      <span className="text-gray-400 text-xs">{t('table.na')}</span>
                     )}
                   </div>
 
                   {/* Measurements */}
                   <div className="mb-4">
                     <div className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
-                      Medições Agregadas
+                      {t('cityMap.aggregatedMeasurements')}
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                       <div>🌡️ {formatMeasurement(m.temperature, '°C')}</div>
                       <div>💧 {formatMeasurement(m.humidity, '%', 0)}</div>
                       <div>🌫️ PM2.5: {formatMeasurement(m.pm25, 'µg/m³')}</div>
-                      <div>💨 Vento: {formatMeasurement(m.windSpeed, 'm/s')}</div>
+                      <div>💨 {formatMeasurement(m.windSpeed, 'm/s')}</div>
                     </div>
                   </div>
 
                   {/* Available Metrics Count */}
                   <div className="mb-4 pb-3 border-b border-gray-200">
                     <div className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
-                      Componentes Disponíveis
+                      {t('cityMap.availableComponents')}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {city.icaud?.availableComponents?.map(comp => (
@@ -134,7 +127,7 @@ export default function CityMap({ cities = [], sensors = [], center = [-14.2350,
                   {/* Sensors Contributing to This City */}
                   <div>
                     <div className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">
-                      📡 Sensores ({city.sensorCount || citySensors.length})
+                      {t('cityMap.sensorsSectionTitle')} ({city.sensorCount || citySensors.length})
                     </div>
                     {citySensors.length > 0 ? (
                       <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -144,27 +137,27 @@ export default function CityMap({ cities = [], sensors = [], center = [-14.2350,
                               {sensor.name}
                             </div>
                             <div className="text-gray-600 mb-1">
-                              Tipo: <span className="font-medium">{sensor.deviceType || 'Desconhecido'}</span>
+                              {t('cityMap.deviceType')} <span className="font-medium">{sensor.deviceType || '—'}</span>
                             </div>
                             <div className="space-y-1">
                               {sensor.measurements.temperature !== null && (
                                 <div className="text-gray-600">
-                                  {SENSOR_DESCRIPTIONS.temperature}
+                                  {t('cityMap.descriptions.temperature')}
                                 </div>
                               )}
                               {sensor.measurements.humidity !== null && (
                                 <div className="text-gray-600">
-                                  {SENSOR_DESCRIPTIONS.humidity}
+                                  {t('cityMap.descriptions.humidity')}
                                 </div>
                               )}
                               {sensor.measurements.pm25 !== null && (
                                 <div className="text-gray-600">
-                                  {SENSOR_DESCRIPTIONS.pm25}
+                                  {t('cityMap.descriptions.pm25')}
                                 </div>
                               )}
                               {sensor.measurements.windSpeed !== null && (
                                 <div className="text-gray-600">
-                                  {SENSOR_DESCRIPTIONS.windSpeed}
+                                  {t('cityMap.descriptions.windSpeed')}
                                 </div>
                               )}
                             </div>
@@ -175,13 +168,13 @@ export default function CityMap({ cities = [], sensors = [], center = [-14.2350,
                         ))}
                         {citySensors.length > 5 && (
                           <div className="text-xs text-gray-500 italic">
-                            +{citySensors.length - 5} sensores mais...
+                            +{citySensors.length - 5}...
                           </div>
                         )}
                       </div>
                     ) : (
                       <div className="text-xs text-gray-500 italic">
-                        Nenhum sensor próximo encontrado
+                        {t('cityMap.noSensorsNearby')}
                       </div>
                     )}
                   </div>
@@ -197,17 +190,18 @@ export default function CityMap({ cities = [], sensors = [], center = [-14.2350,
 
 /** Map legend component */
 export function CityMapLegend() {
+  const { t } = useTranslation();
   const items = [
-    { color: '#22c55e', label: 'Muito Confortável (81-100)' },
-    { color: '#84cc16', label: 'Confortável (61-80)' },
-    { color: '#f59e0b', label: 'Desconfortável (31-60)' },
-    { color: '#ef4444', label: 'Insalubre (0-30)' },
-    { color: '#6b7280', label: 'Sem Dados' },
+    { color: '#22c55e', label: t('map.legend.veryComfortable') },
+    { color: '#84cc16', label: t('map.legend.comfortable') },
+    { color: '#f59e0b', label: t('map.legend.uncomfortable') },
+    { color: '#ef4444', label: t('map.legend.unhealthy') },
+    { color: '#6b7280', label: t('map.legend.noData') },
   ];
 
   return (
     <div className="bg-white/90 backdrop-blur rounded-lg border border-gray-200 p-3 shadow-sm">
-      <div className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">Índice ICAU-D por Cidade</div>
+      <div className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wider">{t('map.legend.title')}</div>
       {items.map(item => (
         <div key={item.label} className="flex items-center gap-2 mb-1">
           <div
