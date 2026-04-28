@@ -2,6 +2,41 @@
 // Sensor data model - normalized schema shared across all data sources
 
 /**
+ * Faixas físicas plausíveis para cada variável.
+ * Sensor.Community tem leituras corrompidas (ex: temperatura 668°C, umidade 722%)
+ * que precisam ser descartadas antes de entrar em qualquer agregação/ICAU-D.
+ *
+ * Observação: PM2.5 e PM10 podem ter picos altos em incêndios (>500 µg/m³),
+ * mas valores >1000 são quase certamente sensor com falha óptica/poeira.
+ */
+const PLAUSIBLE_RANGES = {
+  temperature: { min: -50,  max: 60   },  // °C
+  humidity:    { min: 0,    max: 100  },  // %
+  pm25:        { min: 0,    max: 1000 },  // µg/m³
+  pm10:        { min: 0,    max: 2000 },  // µg/m³
+  windSpeed:   { min: 0,    max: 100  },  // m/s (~360 km/h)
+};
+
+function inRange(field, val) {
+  if (val === null || val === undefined || isNaN(val)) return false;
+  const r = PLAUSIBLE_RANGES[field];
+  if (!r) return true;
+  return val >= r.min && val <= r.max;
+}
+
+/**
+ * Parse a float and validate against plausible physical range for the field.
+ * Out-of-range values are coerced to null — eles não devem entrar em médias
+ * nem no cálculo de ICAU-D.
+ */
+function safeMeasurement(field, val) {
+  if (val === null || val === undefined || val === '') return null;
+  const n = parseFloat(val);
+  if (isNaN(n)) return null;
+  return inRange(field, n) ? n : null;
+}
+
+/**
  * Create a normalized sensor object
  * All external API responses are mapped to this schema
  *
@@ -38,11 +73,11 @@ export function createSensor({
       country: country || null,
     },
     measurements: {
-      temperature: toFloat(temperature),
-      humidity:    toFloat(humidity),
-      pm25:        toFloat(pm25),
-      pm10:        toFloat(pm10),
-      windSpeed:   toFloat(windSpeed),
+      temperature: safeMeasurement('temperature', temperature),
+      humidity:    safeMeasurement('humidity',    humidity),
+      pm25:        safeMeasurement('pm25',        pm25),
+      pm10:        safeMeasurement('pm10',        pm10),
+      windSpeed:   safeMeasurement('windSpeed',   windSpeed),
     },
     lastSeen: lastSeen || new Date().toISOString(),
     icaud,
@@ -50,15 +85,6 @@ export function createSensor({
     sensorCount,
     exposure,
   };
-}
-
-/**
- * Parse a float safely - returns null for invalid values
- */
-function toFloat(val) {
-  if (val === null || val === undefined || val === '') return null;
-  const n = parseFloat(val);
-  return isNaN(n) ? null : n;
 }
 
 /**

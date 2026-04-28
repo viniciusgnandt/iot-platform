@@ -49,9 +49,10 @@ export default function CityDetail() {
   if (error) return <ErrorAlert message={`'${cityName}' — ${t('common.noData')}`} />;
   if (!city) return <EmptyState message={`${t('common.noData')} — '${cityName}'`} />;
 
-  const { icaud, measurements, measurementCounts, sensorCount, country } = city;
+  const { icaud, measurements, measurementCounts, measurementSources, sensorCount, country } = city;
   const components = icaud?.components || {};
   const weights    = icaud?.weights    || {};
+  const sources    = measurementSources || {};
 
   // Build a fake sensor list centered on the city for the map
   const citySensor = city.sensorCount > 0 ? [{
@@ -99,11 +100,11 @@ export default function CityDetail() {
 
       {/* Measurements grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <StatCard label={t('cityDetail.measurements.temperature')} value={measurements.temperature?.toFixed(1)} unit="°C"    icon="🌡️" color="#f59e0b" />
-        <StatCard label={t('cityDetail.measurements.humidity')}    value={measurements.humidity?.toFixed(0)}     unit="%"     icon="💧" color="#3b82f6" />
-        <StatCard label={t('cityDetail.measurements.pm25')}        value={measurements.pm25?.toFixed(1)}         unit="µg/m³" icon="🌫️" color="#8b5cf6" />
-        <StatCard label={t('cityDetail.measurements.pm10')}        value={measurements.pm10?.toFixed(1)}         unit="µg/m³" icon="💨" color="#ec4899" />
-        <StatCard label={t('cityDetail.measurements.windSpeed')}   value={measurements.windSpeed?.toFixed(1)}    unit="m/s"   icon="🌬️" color="#06b6d4" />
+        <StatCard label={t('cityDetail.measurements.temperature')} value={measurements.temperature?.toFixed(1)} unit="°C"    icon="🌡️" color="#f59e0b" source={sources.temperature} />
+        <StatCard label={t('cityDetail.measurements.humidity')}    value={measurements.humidity?.toFixed(0)}     unit="%"     icon="💧" color="#3b82f6" source={sources.humidity} />
+        <StatCard label={t('cityDetail.measurements.pm25')}        value={measurements.pm25?.toFixed(1)}         unit="µg/m³" icon="🌫️" color="#8b5cf6" source={sources.pm25} />
+        <StatCard label={t('cityDetail.measurements.pm10')}        value={measurements.pm10?.toFixed(1)}         unit="µg/m³" icon="💨" color="#ec4899" source={sources.pm10} />
+        <StatCard label={t('cityDetail.measurements.windSpeed')}   value={measurements.windSpeed?.toFixed(1)}    unit="m/s"   icon="🌬️" color="#06b6d4" source={sources.windSpeed} />
       </div>
 
       {/* ICAU-D breakdown + Chart */}

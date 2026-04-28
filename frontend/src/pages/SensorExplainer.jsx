@@ -198,16 +198,71 @@ export default function SensorExplainer() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <span>⛅</span> Open-Meteo — Estações Meteorológicas
             </h3>
-            <SensorTypeCard
-              icon="⛅"
-              name="Estações Meteorológicas (Open-Meteo)"
-              model="Reanálise + estações globais"
-              description="API gratuita e aberta que fornece dados meteorológicos de alta resolução para qualquer coordenada do mundo. Combina dados de estações meteorológicas e modelos numéricos. Cobre cidades brasileiras e europeias."
-              measurements={['Temperatura', 'Umidade', 'Velocidade do Vento']}
-              manufacturer="Open-Meteo (open source)"
-              cost="Gratuito (sem chave de API)"
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SensorTypeCard
+                icon="⛅"
+                name="Estações Meteorológicas (Open-Meteo)"
+                model="Reanálise + estações globais"
+                description="API gratuita e aberta que fornece dados meteorológicos de alta resolução para qualquer coordenada do mundo. Combina dados de estações meteorológicas e modelos numéricos. Cobre cidades brasileiras e europeias."
+                measurements={['Temperatura', 'Umidade', 'Velocidade do Vento']}
+                manufacturer="Open-Meteo (open source)"
+                cost="Gratuito (sem chave de API)"
+              />
+              <SensorTypeCard
+                icon="🌫️"
+                name="Open-Meteo Air Quality (modelo CAMS)"
+                model="CAMS / ECMWF"
+                description="API gratuita de qualidade do ar baseada no modelo CAMS do ECMWF. Cobre todo o globo em altíssima resolução, fornecendo concentrações de PM2.5/PM10 mesmo em regiões sem sensores comunitários. Usada para garantir cobertura de qualidade do ar em todas as cidades brasileiras (onde Sensor.Community tem pouca presença)."
+                measurements={['PM2.5', 'PM10']}
+                manufacturer="ECMWF / Open-Meteo"
+                cost="Gratuito (sem chave de API)"
+              />
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Multi-source merging */}
+      <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-200 p-6 md:p-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <span>🔗</span> Fusão Multi-Fonte por Cidade
+        </h2>
+        <p className="text-gray-700 mb-5">
+          Cada fonte mede coisas diferentes: <strong>Sensor.Community</strong> é forte em qualidade do ar
+          (PM2.5, PM10), enquanto <strong>Open-Meteo</strong> traz meteorologia confiável (vento, temperatura,
+          umidade) para todas as cidades fixas. Sozinha, nenhuma cobre as 4 variáveis do ICAU-D em todos os lugares.
+        </p>
+        <p className="text-gray-700 mb-5">
+          Por isso a EcoSense <strong>combina automaticamente as fontes por cidade</strong>: para cada
+          variável faltante em uma cidade, buscamos o sensor mais próximo de outra fonte (até 80 km) e
+          usamos o valor dele. Assim, São Paulo, por exemplo, ganha o vento do Open-Meteo e o PM2.5
+          de um sensor IoT comunitário próximo.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div className="bg-white rounded-lg border border-blue-100 p-4">
+            <div className="text-2xl mb-2">1️⃣</div>
+            <h4 className="font-semibold text-gray-900 mb-1">Coleta separada</h4>
+            <p className="text-sm text-gray-600">Cada fonte é consultada de forma independente — Sensor.Community traz PM2.5/PM10, Open-Meteo traz temperatura/umidade/vento.</p>
+          </div>
+          <div className="bg-white rounded-lg border border-blue-100 p-4">
+            <div className="text-2xl mb-2">2️⃣</div>
+            <h4 className="font-semibold text-gray-900 mb-1">Agrupamento por cidade</h4>
+            <p className="text-sm text-gray-600">Sensores são agrupados pela cidade onde estão instalados (resolvida via geocoding reverso quando necessário).</p>
+          </div>
+          <div className="bg-white rounded-lg border border-blue-100 p-4">
+            <div className="text-2xl mb-2">3️⃣</div>
+            <h4 className="font-semibold text-gray-900 mb-1">Preenchimento cruzado</h4>
+            <p className="text-sm text-gray-600">Variáveis ausentes são preenchidas com o sensor mais próximo de outra fonte (raio 80 km). A fonte de cada métrica é registrada e exibida no tooltip ⓘ.</p>
+          </div>
+        </div>
+
+        <div className="mt-6 p-4 bg-white bg-opacity-70 rounded-lg border border-blue-200">
+          <p className="text-sm text-gray-700">
+            <strong>💡 Dica:</strong> Em qualquer card de medição (Painel, Cidade, Ranking), passe o mouse sobre
+            o ícone <span className="inline-block px-1.5 py-0.5 bg-gray-100 rounded text-xs font-mono">ⓘ</span> ou
+            sobre o valor numérico para ver de qual fonte aquele dado veio.
+          </p>
         </div>
       </div>
 
@@ -277,7 +332,7 @@ export default function SensorExplainer() {
             <h3 className="font-semibold text-gray-900 mb-2">{t('sensors.validation')}</h3>
             <p className="text-sm text-gray-600">
               A EcoSense filtra sensores com dados inválidos (ex: temperatura -99°C, umidade 999%).
-              Sensores que não reportam dados há >2 horas são marcados como inativos. Dados agregados por cidade
+              Sensores que não reportam dados há mais de 2 horas são marcados como inativos. Dados agregados por cidade
               usam média aritmética, então um sensor com leitura errada afeta menos cidades com muitos sensores.
             </p>
           </div>

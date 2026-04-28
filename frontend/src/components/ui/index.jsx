@@ -47,17 +47,45 @@ export function ScoreRing({ score, size = 120 }) {
   );
 }
 
-/** Stat card */
-export function StatCard({ label, value, unit, icon, color = '#6b7280' }) {
+/** Stat card
+ *
+ * Aceita opcionalmente `source` — objeto { labels: [...], count, maxDistanceKm }
+ * que descreve de onde a métrica veio. Quando presente, exibimos um pequeno
+ * indicador "ⓘ" com tooltip contendo a fonte (ex: "Sensor.Community").
+ */
+export function StatCard({ label, value, unit, icon, color = '#6b7280', source = null }) {
+  const hasValue = value !== null && value !== undefined;
+
+  let tooltip = '';
+  if (source && source.labels?.length) {
+    const fontes = source.labels.join(' + ');
+    const detalhe = source.count ? ` — ${source.count} sensor(es)` : '';
+    const distancia = source.maxDistanceKm != null
+      ? ` — até ${source.maxDistanceKm} km`
+      : '';
+    tooltip = `Fonte: ${fontes}${detalhe}${distancia}`;
+  }
+
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div
+      className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow"
+      title={tooltip || undefined}
+    >
       <div className="flex items-center gap-2 mb-2">
         <span className="text-xl">{icon}</span>
-        <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">{label}</span>
+        <span className="text-xs text-gray-500 uppercase tracking-wider font-medium flex-1">{label}</span>
+        {tooltip && (
+          <span
+            className="text-[10px] text-gray-400 cursor-help select-none"
+            aria-label={tooltip}
+          >
+            ⓘ
+          </span>
+        )}
       </div>
       <div className="text-2xl font-bold font-mono" style={{ color }}>
-        {value !== null && value !== undefined ? value : '—'}
-        {value !== null && value !== undefined && unit && (
+        {hasValue ? value : '—'}
+        {hasValue && unit && (
           <span className="text-sm font-normal text-gray-400 ml-1">{unit}</span>
         )}
       </div>

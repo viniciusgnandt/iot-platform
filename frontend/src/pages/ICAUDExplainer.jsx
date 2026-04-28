@@ -188,6 +188,27 @@ export default function ICAUDExplainer() {
             </div>
           </div>
 
+          {/* Multi-source fusion explanation */}
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-200 p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <span>🔗</span> Fusão Multi-Fonte por Cidade
+            </h3>
+            <p className="text-gray-700 mb-3">
+              Sensor.Community traz qualidade do ar (PM2.5/PM10), Open-Meteo traz meteorologia (temperatura/umidade/vento).
+              Sozinha, nenhuma fonte cobre todas as 4 variáveis do ICAU-D em todas as cidades.
+            </p>
+            <p className="text-gray-700 mb-3">
+              A EcoSense <strong>combina automaticamente as fontes</strong>: quando uma cidade está sem alguma
+              variável, o sistema procura o sensor mais próximo de outra fonte (até 80 km) e usa o valor dele.
+              Cada métrica guarda registro de sua origem — passe o mouse sobre qualquer valor para ver no tooltip ⓘ.
+            </p>
+            <div className="bg-white rounded-lg p-3 text-xs text-gray-700 border border-blue-100">
+              <strong>Exemplo:</strong> "São Paulo" forma-se a partir do Open-Meteo (temp, umidade, vento). PM2.5 ainda
+              está vazio, então buscamos o sensor Sensor.Community mais próximo (a ~12 km) e importamos só o PM2.5
+              dele. Resultado: a cidade fica com as 4 variáveis e o ICAU-D usa pesos completos.
+            </div>
+          </div>
+
           {/* Diagrama de Arquitetura */}
           <div>
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Diagrama Técnico</h3>
@@ -315,7 +336,7 @@ export default function ICAUDExplainer() {
           {/* Data Sources */}
           <div>
             <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('explainer.architecture.sourcesTitle')}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-900 mb-2">🌍 Sensor.Community</h4>
                 <p className="text-sm text-gray-600 mb-3">{t('explainer.sources.sc.desc')}</p>
@@ -329,7 +350,7 @@ export default function ICAUDExplainer() {
               </div>
 
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">⛅ Open-Meteo</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">⛅ Open-Meteo (Meteorologia)</h4>
                 <p className="text-sm text-gray-600 mb-3">{t('explainer.sources.meteo.desc')}</p>
                 <div className="text-xs text-gray-600 space-y-1">
                   <div><strong>{t('explainer.sources.coverageLabel')}:</strong> {t('explainer.sources.meteo.coverage')}</div>
@@ -337,6 +358,22 @@ export default function ICAUDExplainer() {
                   <div><strong>{t('explainer.sources.dataLabel')}:</strong> {t('explainer.sources.meteo.data')}</div>
                   <div><strong>API:</strong> api.open-meteo.com</div>
                   <div><strong>{t('explainer.sources.freeTag')}</strong></div>
+                </div>
+              </div>
+
+              <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-2">🌫️ Open-Meteo Air Quality</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  API gratuita baseada no modelo CAMS (ECMWF) que fornece PM2.5 e PM10 globalmente.
+                  Garante cobertura de qualidade do ar em cidades brasileiras, onde Sensor.Community
+                  praticamente não tem sensores instalados.
+                </p>
+                <div className="text-xs text-gray-600 space-y-1">
+                  <div><strong>Cobertura:</strong> Global (modelo CAMS)</div>
+                  <div><strong>Atualização:</strong> Horária</div>
+                  <div><strong>Dados:</strong> PM2.5, PM10</div>
+                  <div><strong>API:</strong> air-quality-api.open-meteo.com</div>
+                  <div><strong>API Gratuita</strong></div>
                 </div>
               </div>
 

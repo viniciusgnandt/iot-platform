@@ -10,14 +10,15 @@
  * @returns {string} Formatted date in GMT -3
  */
 export function formatDateBRT(dateInput, options = {}) {
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-
-  if (isNaN(date.getTime())) {
+  if (dateInput === null || dateInput === undefined || dateInput === '') {
     return 'Data inválida';
   }
 
-  // Convert to GMT -3 (BRT)
-  const brtDate = new Date(date.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    return 'Data inválida';
+  }
 
   const defaultOptions = {
     year: 'numeric',
@@ -26,9 +27,10 @@ export function formatDateBRT(dateInput, options = {}) {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    timeZone: 'America/Sao_Paulo',
   };
 
-  return brtDate.toLocaleString('pt-BR', { ...defaultOptions, ...options });
+  return date.toLocaleString('pt-BR', { ...defaultOptions, ...options });
 }
 
 /**
@@ -73,7 +75,13 @@ export function formatDateOnlyBRT(dateInput) {
  * Format relative time (e.g., "há 5 minutos", "há 2 horas")
  */
 export function formatRelativeTimeBRT(dateInput) {
+  if (dateInput === null || dateInput === undefined || dateInput === '') {
+    return '—';
+  }
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    return '—';
+  }
   const now = new Date();
   const diffMs = now - date;
   const diffSec = Math.floor(diffMs / 1000);

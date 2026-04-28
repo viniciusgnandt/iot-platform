@@ -5,13 +5,46 @@ import { Suspense, lazy, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSensors, useSensorsHistory, useSensorsHistoryFallback, useRanking, useCities } from '../hooks/useEnvironmentalData.js';
+import { useSyncedFilters } from '../hooks/useSyncedFilters.js';
 import { formatRelativeTimeBRT, formatFullDateTimeBRT } from '../utils/dateFormatter.js';
 import { StatCard, ScoreRing, Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import RankingTable from '../components/ranking/RankingTable.jsx';
 import { TopCitiesChart, ClassificationDonut } from '../components/charts/EnvironmentalChart.jsx';
-import { classify, formatMeasurement } from '../utils/icaud.js';
+import { classify, CLASSIFICATIONS, formatMeasurement } from '../utils/icaud.js';
 
 const SensorMap = lazy(() => import('../components/map/SensorMap.jsx'));
+
+// Country → continent mapping (mesmo do Ranking — mantido em sincronia)
+const COUNTRY_CONTINENT = {
+  BR: 'South America',
+  DE: 'Europe', GB: 'Europe', FR: 'Europe', ES: 'Europe', IT: 'Europe',
+  NL: 'Europe', AT: 'Europe', PL: 'Europe', CZ: 'Europe', HU: 'Europe',
+  BE: 'Europe', CH: 'Europe', DK: 'Europe', SE: 'Europe', NO: 'Europe',
+  FI: 'Europe', PT: 'Europe', GR: 'Europe', IE: 'Europe', RO: 'Europe',
+  BG: 'Europe', HR: 'Europe', RS: 'Europe', MK: 'Europe', BA: 'Europe',
+  SK: 'Europe', SI: 'Europe', LT: 'Europe', LV: 'Europe', EE: 'Europe',
+  RU: 'Europe', UA: 'Europe', BY: 'Europe', AM: 'Europe',
+};
+
+function getContinent(country) {
+  return COUNTRY_CONTINENT[country] || 'Other';
+}
+
+const SOURCE_LABELS_FRONT = {
+  sensor_community: 'Sensor.Community (sensores IoT comunitários)',
+  open_meteo:       'Open-Meteo (estações meteorológicas)',
+  open_meteo_aq:    'Open-Meteo Air Quality (modelo CAMS)',
+};
+
+function summarizeSources(contributing) {
+  if (contributing.length === 0) return null;
+  const set = new Set(contributing.map(s => s.source));
+  return {
+    sources: [...set],
+    labels:  [...set].map(src => SOURCE_LABELS_FRONT[src] || src),
+    count:   contributing.length,
+  };
+}
 
 function GlobalStats({ cities = [], sensors = [] }) {
   const { t } = useTranslation();
@@ -32,10 +65,10 @@ function GlobalStats({ cities = [], sensors = [] }) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <StatCard label={t('stats.avgTemp')}     value={mean(avgTemp, 'temperature')?.toFixed(1)} unit="°C"    icon="🌡️" color="#f59e0b" />
-      <StatCard label={t('stats.avgHumidity')} value={mean(avgHum,  'humidity')?.toFixed(0)}    unit="%"     icon="💧" color="#3b82f6" />
-      <StatCard label={t('stats.avgPm25')}     value={mean(avgPm25, 'pm25')?.toFixed(1)}        unit="µg/m³" icon="🌫️" color="#8b5cf6" />
-      <StatCard label={t('stats.windSpeed')}   value={mean(avgWind, 'windSpeed')?.toFixed(1)}   unit="m/s"   icon="💨" color="#06b6d4" />
+      <StatCard label={t('stats.avgTemp')}     value={mean(avgTemp, 'temperature')?.toFixed(1)} unit="°C"    icon="🌡️" color="#f59e0b" source={summarizeSources(avgTemp)} />
+      <StatCard label={t('stats.avgHumidity')} value={mean(avgHum,  'humidity')?.toFixed(0)}    unit="%"     icon="💧" color="#3b82f6" source={summarizeSources(avgHum)} />
+      <StatCard label={t('stats.avgPm25')}     value={mean(avgPm25, 'pm25')?.toFixed(1)}        unit="µg/m³" icon="🌫️" color="#8b5cf6" source={summarizeSources(avgPm25)} />
+      <StatCard label={t('stats.windSpeed')}   value={mean(avgWind, 'windSpeed')?.toFixed(1)}   unit="m/s"   icon="💨" color="#06b6d4" source={summarizeSources(avgWind)} />
     </div>
   );
 }
@@ -43,11 +76,16 @@ function GlobalStats({ cities = [], sensors = [] }) {
 export default function Dashboard() {
   const { t } = useTranslation();
   const [timePeriod, setTimePeriod] = useState('live');
+  const { filters, update: setFilters, clear: clearFilters, hasActive: hasActiveFilter } = useSyncedFilters();
+  const filterClass     = filters.class;
+  const filterContinent = filters.continent;
+  const filterCountry   = filters.country;
 
   const { data: liveSensors = [], isLoading: sensorsLoading } = useSensors({ limit: 500 });
   const { data: historySensors = [], isLoading: historyLoading } = useSensorsHistory(timePeriod);
-  const { data: fallbackSensors = [] } = useSensorsHistoryFallback();
-  const { data: rankingRes, isLoading: rankingLoading } = useRanking(10);
+  // Só dispara o fallback histórico se o live ainda não trouxe nada
+  const { data: fallbackSensors = [] } = useSensorsHistoryFallback({ enabled: liveSensors.length === 0 });
+  const { data: rankingRes, isLoading: rankingLoading } = useRanking(50);
   const { data: cities = [], isLoading: citiesLoading } = useCities();
 
   const isHistoryMode = timePeriod !== 'live';
@@ -55,31 +93,72 @@ export default function Dashboard() {
   // Sensor selection with fallback:
   // - live mode: use live data, or fallback to MongoDB history if live is still empty
   // - history mode: use selected period history, or live data if history is empty
-  const sensorsReady = isHistoryMode
+  const allSensors = isHistoryMode
     ? (historySensors.length > 0 ? historySensors : liveSensors)
     : (liveSensors.length > 0 ? liveSensors : fallbackSensors);
 
   const usingFallback = !isHistoryMode && liveSensors.length === 0 && fallbackSensors.length > 0;
 
-  const ranking = rankingRes?.data || [];
+  const allRanking = rankingRes?.data || [];
   const rankingStillLoading = rankingLoading || rankingRes?.loading;
   const isLoading = sensorsLoading || rankingLoading || (isHistoryMode && historyLoading);
 
-  const validCities = cities.filter(c => c.icaud?.score !== null);
+  // Aplica filtros de continente / país / classificação a cidades e sensores.
+  // Sensores são filtrados pelo país do seu location, mantendo o mapa coerente
+  // com os cards e ranking.
+  const matchesCity = (c) => {
+    if (filterClass && c.icaud?.classification?.label !== filterClass) return false;
+    if (filterContinent && getContinent(c.country) !== filterContinent) return false;
+    if (filterCountry && c.country !== filterCountry) return false;
+    return true;
+  };
+  const matchesSensor = (s) => {
+    const country = s.location?.country;
+    if (filterContinent && getContinent(country) !== filterContinent) return false;
+    if (filterCountry && country !== filterCountry) return false;
+    return true;
+  };
+
+  const filteredCities  = useMemo(() => cities.filter(matchesCity),
+    [cities, filterClass, filterContinent, filterCountry]);
+  const filteredSensors = useMemo(() => allSensors.filter(matchesSensor),
+    [allSensors, filterContinent, filterCountry]);
+  const filteredRanking = useMemo(() => allRanking.filter(matchesCity).slice(0, 10),
+    [allRanking, filterClass, filterContinent, filterCountry]);
+
+  // Stats baseiam-se em cidades filtradas
+  const validCities = filteredCities.filter(c => c.icaud?.score !== null);
   const globalAvgScore = validCities.length > 0
     ? validCities.reduce((s, c) => s + c.icaud.score, 0) / validCities.length
     : null;
 
   const mapReady = !(sensorsLoading || (isHistoryMode && historyLoading));
 
+  // Listas para popular os selects de continente e país
+  const { continents, countriesInContinent } = useMemo(() => {
+    const continentSet = new Set();
+    const countrySet = new Set();
+    for (const c of cities) {
+      if (c.country) {
+        continentSet.add(getContinent(c.country));
+        countrySet.add(c.country);
+      }
+    }
+    const continents = [...continentSet].sort();
+    const countriesInContinent = [...countrySet]
+      .filter(code => !filterContinent || getContinent(code) === filterContinent)
+      .sort((a, b) => (t(`countries.${a}`, a)).localeCompare(t(`countries.${b}`, b)));
+    return { continents, countriesInContinent };
+  }, [cities, filterContinent, t]);
+
   // Data da leitura mais recente entre todos os sensores visíveis
   const lastReadingAt = useMemo(() => {
-    const timestamps = sensorsReady
+    const timestamps = filteredSensors
       .map(s => s.lastSeen)
       .filter(Boolean)
       .sort();
     return timestamps.at(-1) || null;
-  }, [sensorsReady]);
+  }, [filteredSensors]);
 
   return (
     <div className="space-y-8">
@@ -89,10 +168,10 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
           <p className="text-gray-500 text-sm mt-1">
             {isHistoryMode
-              ? t('dashboard.subtitleHistory', { period: timePeriod === 'week' ? t('dashboard.week') : t('dashboard.month'), sensors: sensorsReady.length, cities: cities.length })
+              ? t('dashboard.subtitleHistory', { period: timePeriod === 'week' ? t('dashboard.week') : t('dashboard.month'), sensors: filteredSensors.length, cities: filteredCities.length })
               : usingFallback
-                ? t('dashboard.subtitleFallback', { sensors: sensorsReady.length })
-                : t('dashboard.subtitleLive', { sensors: sensorsReady.length, cities: cities.length })
+                ? t('dashboard.subtitleFallback', { sensors: filteredSensors.length })
+                : t('dashboard.subtitleLive', { sensors: filteredSensors.length, cities: filteredCities.length })
             }
           </p>
           {lastReadingAt && (
@@ -149,7 +228,57 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {isLoading ? <Spinner /> : <GlobalStats cities={cities} sensors={sensorsReady} />}
+      {/* Geographic / classification filters */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <select
+          value={filterContinent}
+          onChange={e => setFilters({ continent: e.target.value, country: '' })}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="">{t('ranking.allContinents')}</option>
+          {continents.map(c => (
+            <option key={c} value={c}>{t(`countries.continents.${c}`, c)}</option>
+          ))}
+        </select>
+
+        <select
+          value={filterCountry}
+          onChange={e => setFilters({ country: e.target.value })}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="">{t('ranking.allCountries')}</option>
+          {countriesInContinent.map(code => (
+            <option key={code} value={code}>{t(`countries.${code}`, code)}</option>
+          ))}
+        </select>
+
+        <select
+          value={filterClass}
+          onChange={e => setFilters({ class: e.target.value })}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="">{t('ranking.allClassifications')}</option>
+          {CLASSIFICATIONS.map(c => (
+            <option key={c.label} value={c.label}>{t(`classifications.${c.label}`, c.label)}</option>
+          ))}
+        </select>
+
+        {hasActiveFilter && (
+          <button
+            onClick={clearFilters}
+            className="text-sm text-gray-500 hover:text-gray-700 px-2 py-2"
+            title="Limpar filtros"
+          >
+            ✕ Limpar
+          </button>
+        )}
+
+        <div className="text-sm text-gray-500 flex items-center ml-auto">
+          {t('ranking.showing', { count: filteredCities.length })}
+        </div>
+      </div>
+
+      {isLoading ? <Spinner /> : <GlobalStats cities={filteredCities} sensors={filteredSensors} />}
 
       {/* Map */}
       <div>
@@ -160,13 +289,13 @@ export default function Dashboard() {
           }
         </h2>
         <Suspense fallback={<Spinner />}>
-          {mapReady && sensorsReady.length > 0 ? (
-            <SensorMap sensors={sensorsReady} height="450px" />
-          ) : mapReady && sensorsReady.length === 0 ? (
+          {mapReady && filteredSensors.length > 0 ? (
+            <SensorMap sensors={filteredSensors} height="450px" />
+          ) : mapReady && filteredSensors.length === 0 ? (
             <div className="h-[450px] bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center text-gray-400">
               <div className="text-center">
                 <div className="text-4xl mb-2">🗺️</div>
-                <p className="text-sm">{t('common.loading')}</p>
+                <p className="text-sm">{hasActiveFilter ? 'Nenhum sensor corresponde ao filtro' : t('common.loading')}</p>
               </div>
             </div>
           ) : (
@@ -179,25 +308,25 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
           <h2 className="text-base font-semibold text-gray-800 mb-4">{t('dashboard.topCities')}</h2>
-          {rankingStillLoading || ranking.length === 0 ? (
+          {rankingStillLoading || filteredRanking.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 gap-2">
               <div className="animate-spin text-3xl">⚙️</div>
-              <p className="text-sm">{t('common.loading')}</p>
+              <p className="text-sm">{hasActiveFilter && allRanking.length > 0 ? 'Nenhuma cidade corresponde ao filtro' : t('common.loading')}</p>
             </div>
           ) : (
-            <TopCitiesChart cities={ranking} />
+            <TopCitiesChart cities={filteredRanking} />
           )}
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
           <h2 className="text-base font-semibold text-gray-800 mb-4">{t('dashboard.distribution')}</h2>
-          {citiesLoading || cities.length === 0 ? (
+          {citiesLoading || filteredCities.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 gap-2">
               <div className="animate-spin text-3xl">⚙️</div>
-              <p className="text-sm">{t('common.loading')}</p>
+              <p className="text-sm">{hasActiveFilter && cities.length > 0 ? 'Nenhuma cidade corresponde ao filtro' : t('common.loading')}</p>
             </div>
           ) : (
-            <ClassificationDonut cities={cities} />
+            <ClassificationDonut cities={filteredCities} />
           )}
         </div>
       </div>
@@ -212,13 +341,19 @@ export default function Dashboard() {
         </div>
         {rankingStillLoading ? (
           <Spinner />
-        ) : ranking.length === 0 ? (
+        ) : filteredRanking.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-3">
-            <div className="animate-spin text-3xl">⚙️</div>
-            <p className="text-sm">{t('common.loading')}</p>
+            {hasActiveFilter && allRanking.length > 0 ? (
+              <p className="text-sm">Nenhuma cidade corresponde ao filtro</p>
+            ) : (
+              <>
+                <div className="animate-spin text-3xl">⚙️</div>
+                <p className="text-sm">{t('common.loading')}</p>
+              </>
+            )}
           </div>
         ) : (
-          <RankingTable cities={ranking} />
+          <RankingTable cities={filteredRanking} />
         )}
       </div>
     </div>

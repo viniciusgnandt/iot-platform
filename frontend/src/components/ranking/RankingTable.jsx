@@ -5,12 +5,96 @@ import { classify, formatScore, formatMeasurement } from '../../utils/icaud.js';
 import { ClassificationBadge } from '../ui/index.jsx';
 import { formatRelativeTimeBRT, formatFullDateTimeBRT } from '../../utils/dateFormatter.js';
 
+/** Monta o tooltip de fonte para uma métrica de cidade */
+function sourceTooltip(sources, field) {
+  const s = sources?.[field];
+  if (!s || !s.labels?.length) return undefined;
+  const fontes = s.labels.join(' + ');
+  const detalhe = s.count ? ` — ${s.count} sensor(es)` : '';
+  return `Fonte: ${fontes}${detalhe}`;
+}
+
+/**
+ * URL externa do sensor, conforme a fonte.
+ * Sensor.Community tem uma página por sensor; Open-Meteo é um modelo, então
+ * apontamos para sua documentação.
+ */
+function sensorSourceUrl(sensor) {
+  if (!sensor?.source) return null;
+  if (sensor.source === 'sensor_community') {
+    const numeric = String(sensor.id || '').replace(/^sc_/, '');
+    if (numeric) return `https://devices.sensor.community/sensors/${numeric}`;
+    return 'https://maps.sensor.community/';
+  }
+  if (sensor.source === 'open_meteo')    return 'https://open-meteo.com/en/docs';
+  if (sensor.source === 'open_meteo_aq') return 'https://open-meteo.com/en/docs/air-quality-api';
+  return null;
+}
+
+/**
+ * Popover com a lista detalhada de sensores que compõem a cidade.
+ * Aparece ao passar o mouse sobre o badge de contagem; cada sensor traz
+ * um link "ver fonte ↗" para a página externa correspondente.
+ */
+function SensorsPopover({ city }) {
+  const list = city.sensorList || [];
+  const count = city.sensorCount ?? list.length;
+
+  return (
+    <span className="relative inline-block group">
+      <span
+        className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 font-mono font-semibold inline-flex items-center justify-center gap-1 cursor-help"
+      >
+        📡 {count}
+      </span>
+
+      {list.length > 0 && (
+        <div
+          className="absolute z-30 right-0 mt-1 hidden group-hover:block w-72 max-w-[80vw] bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-left"
+          role="tooltip"
+        >
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Sensores que alimentam {city.name}
+          </div>
+          <ul className="space-y-2 max-h-60 overflow-y-auto">
+            {list.map((s) => {
+              const url = sensorSourceUrl(s);
+              return (
+                <li key={s.id} className="text-xs text-gray-700">
+                  <div className="font-medium text-gray-900 truncate">{s.name}</div>
+                  <div className="text-gray-500 mt-0.5">
+                    <span className="font-mono">{s.id}</span>
+                  </div>
+                  <div className="text-gray-500 mt-0.5">
+                    {s.sourceLabel || s.source}
+                  </div>
+                  {url && (
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-1 text-blue-600 hover:text-blue-800 hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      ver fonte ↗
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </span>
+  );
+}
+
 export default function RankingTable({ cities = [], showDetails = false }) {
   const { t } = useTranslation();
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto overflow-y-visible">
+      <table className="w-full text-sm relative">
         <thead>
           <tr className="border-b border-gray-100">
             <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-gray-500 font-semibold w-12">{t('table.rank')}</th>
@@ -35,10 +119,8 @@ export default function RankingTable({ cities = [], showDetails = false }) {
             const score = city.icaud?.score ?? null;
             const cls   = classify(score);
             const m     = city.measurements || {};
+            const ms    = city.measurementSources || {};
 
-            const sensorInfo = city.sensorList && city.sensorList.length > 0
-              ? city.sensorList.map(s => `${s.name} (${s.source})${s.lastSeen ? ' — ' + formatFullDateTimeBRT(s.lastSeen) : ''}`).join('\n')
-              : '';
             const lastSeen = city.lastSeen || city.updatedAt || null;
 
             return (
@@ -83,28 +165,31 @@ export default function RankingTable({ cities = [], showDetails = false }) {
 
                 {showDetails && (
                   <>
-                    <td className="py-3 px-4 text-center font-mono text-gray-600 hidden md:table-cell">
-                      {formatMeasurement(m.temperature, '°C')}
+                    <td className="py-3 px-4 text-center font-mono text-gray-600 hidden md:table-cell" title={sourceTooltip(ms, 'temperature')}>
+                      <span className={sourceTooltip(ms, 'temperature') ? 'cursor-help' : ''}>
+                        {formatMeasurement(m.temperature, '°C')}
+                      </span>
                     </td>
-                    <td className="py-3 px-4 text-center font-mono text-gray-600 hidden md:table-cell">
-                      {formatMeasurement(m.humidity, '%', 0)}
+                    <td className="py-3 px-4 text-center font-mono text-gray-600 hidden md:table-cell" title={sourceTooltip(ms, 'humidity')}>
+                      <span className={sourceTooltip(ms, 'humidity') ? 'cursor-help' : ''}>
+                        {formatMeasurement(m.humidity, '%', 0)}
+                      </span>
                     </td>
-                    <td className="py-3 px-4 text-center font-mono text-gray-600 hidden lg:table-cell">
-                      {formatMeasurement(m.pm25, 'µg/m³')}
+                    <td className="py-3 px-4 text-center font-mono text-gray-600 hidden lg:table-cell" title={sourceTooltip(ms, 'pm25')}>
+                      <span className={sourceTooltip(ms, 'pm25') ? 'cursor-help' : ''}>
+                        {formatMeasurement(m.pm25, 'µg/m³')}
+                      </span>
                     </td>
-                    <td className="py-3 px-4 text-center font-mono text-gray-600 hidden lg:table-cell">
-                      {formatMeasurement(m.windSpeed, 'm/s')}
+                    <td className="py-3 px-4 text-center font-mono text-gray-600 hidden lg:table-cell" title={sourceTooltip(ms, 'windSpeed')}>
+                      <span className={sourceTooltip(ms, 'windSpeed') ? 'cursor-help' : ''}>
+                        {formatMeasurement(m.windSpeed, 'm/s')}
+                      </span>
                     </td>
                   </>
                 )}
 
                 <td className="py-3 px-4 text-center hidden sm:table-cell">
-                  <span
-                    title={sensorInfo ? `${t('table.sensors')}:\n${sensorInfo}` : ''}
-                    className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 font-mono font-semibold flex items-center justify-center gap-1 inline-flex cursor-help"
-                  >
-                    📡 {city.sensorCount}
-                  </span>
+                  <SensorsPopover city={city} />
                 </td>
 
                 <td className="py-3 px-4 text-center hidden md:table-cell">

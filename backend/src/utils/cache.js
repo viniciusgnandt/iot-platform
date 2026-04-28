@@ -21,7 +21,9 @@ class CacheManager {
   }
 
   async get(key) {
-    // Tenta MongoDB primeiro
+    // Tenta MongoDB primeiro — se ele estiver indisponível ou com timeout,
+    // o catch faz a queda para memStore (importante: NÃO retornar undefined
+    // dentro do try, ou a memória nunca será consultada quando o Mongo falhar).
     if (mongoCache) {
       try {
         const value = await mongoCache.mongoCacheGet(key);
@@ -29,14 +31,14 @@ class CacheManager {
           this.hits++;
           return value;
         }
-        this.misses++;
-        return undefined;
+        // miss no Mongo — ainda assim tenta memStore (pode ter sido escrito
+        // localmente após uma falha de SET no Mongo)
       } catch (err) {
         logger.warn(`Cache MongoDB GET erro: ${err.message} — usando memória`);
       }
     }
 
-    // Fallback: memória local
+    // Fallback / 2ª camada: memória local
     const entry = memStore.get(key);
     if (entry) {
       if (entry.expiresAt > Date.now()) {
@@ -50,21 +52,21 @@ class CacheManager {
   }
 
   async set(key, value, ttlSeconds = 300) {
-    // Tenta MongoDB primeiro
-    if (mongoCache) {
-      try {
-        await mongoCache.mongoCacheSet(key, value, ttlSeconds);
-        return;
-      } catch (err) {
-        logger.warn(`Cache MongoDB SET erro: ${err.message} — salvando em memória`);
-      }
-    }
-
-    // Fallback: memória local
+    // Sempre grava em memória (defesa em profundidade — se o Mongo cair entre
+    // SET e GET subsequente, a aplicação ainda devolve dados consistentes)
     memStore.set(key, {
       value,
       expiresAt: Date.now() + ttlSeconds * 1000,
     });
+
+    // Tenta também o MongoDB — falhas são silenciosamente toleradas
+    if (mongoCache) {
+      try {
+        await mongoCache.mongoCacheSet(key, value, ttlSeconds);
+      } catch (err) {
+        logger.warn(`Cache MongoDB SET erro: ${err.message} — mantido apenas em memória`);
+      }
+    }
   }
 
   async del(key) {

@@ -1,28 +1,70 @@
 // src/pages/MapPage.jsx
 // Full-page interactive sensor map
 
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSensors } from '../hooks/useEnvironmentalData.js';
+import { useSyncedFilters } from '../hooks/useSyncedFilters.js';
 import { Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import { MapLegend } from '../components/map/SensorMap.jsx';
+import { CLASSIFICATIONS } from '../utils/icaud.js';
 
 const SensorMap = lazy(() => import('../components/map/SensorMap.jsx'));
 
+// Country → continent mapping (alinhado com Dashboard/Ranking)
+const COUNTRY_CONTINENT = {
+  BR: 'South America',
+  DE: 'Europe', GB: 'Europe', FR: 'Europe', ES: 'Europe', IT: 'Europe',
+  NL: 'Europe', AT: 'Europe', PL: 'Europe', CZ: 'Europe', HU: 'Europe',
+  BE: 'Europe', CH: 'Europe', DK: 'Europe', SE: 'Europe', NO: 'Europe',
+  FI: 'Europe', PT: 'Europe', GR: 'Europe', IE: 'Europe', RO: 'Europe',
+  BG: 'Europe', HR: 'Europe', RS: 'Europe', MK: 'Europe', BA: 'Europe',
+  SK: 'Europe', SI: 'Europe', LT: 'Europe', LV: 'Europe', EE: 'Europe',
+  RU: 'Europe', UA: 'Europe', BY: 'Europe', AM: 'Europe',
+};
+const getContinent = c => COUNTRY_CONTINENT[c] || 'Other';
+
 export default function MapPage() {
   const { t } = useTranslation();
-  const [source, setSource] = useState('');
+  const { filters, update: setFilters, clear: clearFilters, hasActive } = useSyncedFilters();
 
   const SOURCE_OPTIONS = [
     { value: '',                 label: t('map.allSources') },
-    { value: 'sensor_community', label: 'Sensor.Community' },
-    { value: 'open_meteo',       label: 'Open-Meteo' },
+    { value: 'sensor_community', label: '🌍 Sensor.Community' },
+    { value: 'open_meteo',       label: '⛅ Open-Meteo (Meteorologia)' },
+    { value: 'open_meteo_aq',    label: '🌫️ Open-Meteo Air Quality' },
   ];
-  const { data: sensors = [], isLoading, error } = useSensors({ source: source || undefined, limit: 1000 });
 
-  const filtered = source
-    ? sensors.filter(s => s.source === source)
-    : sensors;
+  const { data: sensors = [], isLoading, error } = useSensors({ limit: 1000 });
+
+  const filtered = useMemo(() => sensors.filter(s => {
+    if (filters.source && s.source !== filters.source) return false;
+    if (filters.continent && getContinent(s.location?.country) !== filters.continent) return false;
+    if (filters.country && s.location?.country !== filters.country) return false;
+    if (filters.class) {
+      const cls = s.icaud?.classification?.label;
+      if (cls !== filters.class) return false;
+    }
+    return true;
+  }), [sensors, filters]);
+
+  const { continents, countriesInContinent } = useMemo(() => {
+    const continentSet = new Set();
+    const countrySet = new Set();
+    for (const s of sensors) {
+      const code = s.location?.country;
+      if (code) {
+        continentSet.add(getContinent(code));
+        countrySet.add(code);
+      }
+    }
+    return {
+      continents: [...continentSet].sort(),
+      countriesInContinent: [...countrySet]
+        .filter(code => !filters.continent || getContinent(code) === filters.continent)
+        .sort((a, b) => (t(`countries.${a}`, a)).localeCompare(t(`countries.${b}`, b))),
+    };
+  }, [sensors, filters.continent, t]);
 
   return (
     <div className="space-y-4">
@@ -33,18 +75,62 @@ export default function MapPage() {
             {t('map.activeSensors', { count: filtered.length })}
           </p>
         </div>
+      </div>
 
-        <div className="flex gap-3 items-center flex-wrap">
-          <select
-            value={source}
-            onChange={e => setSource(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+      {/* Filtros — alinhados com Painel/Ranking, sincronizados via URL */}
+      <div className="flex gap-3 items-center flex-wrap">
+        <select
+          value={filters.source}
+          onChange={e => setFilters({ source: e.target.value })}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          {SOURCE_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+
+        <select
+          value={filters.continent}
+          onChange={e => setFilters({ continent: e.target.value, country: '' })}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="">{t('ranking.allContinents')}</option>
+          {continents.map(c => (
+            <option key={c} value={c}>{t(`countries.continents.${c}`, c)}</option>
+          ))}
+        </select>
+
+        <select
+          value={filters.country}
+          onChange={e => setFilters({ country: e.target.value })}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="">{t('ranking.allCountries')}</option>
+          {countriesInContinent.map(code => (
+            <option key={code} value={code}>{t(`countries.${code}`, code)}</option>
+          ))}
+        </select>
+
+        <select
+          value={filters.class}
+          onChange={e => setFilters({ class: e.target.value })}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="">{t('ranking.allClassifications')}</option>
+          {CLASSIFICATIONS.map(c => (
+            <option key={c.label} value={c.label}>{t(`classifications.${c.label}`, c.label)}</option>
+          ))}
+        </select>
+
+        {hasActive && (
+          <button
+            onClick={clearFilters}
+            className="text-sm text-gray-500 hover:text-gray-700 px-2 py-2"
+            title="Limpar filtros"
           >
-            {SOURCE_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
+            ✕ Limpar
+          </button>
+        )}
       </div>
 
       {error && <ErrorAlert message="Failed to load sensor data" />}
@@ -54,6 +140,10 @@ export default function MapPage() {
           {isLoading ? (
             <div className="flex items-center justify-center h-[600px] bg-gray-50 rounded-xl border border-gray-200">
               <Spinner size="lg" />
+            </div>
+          ) : filtered.length === 0 && hasActive ? (
+            <div className="flex items-center justify-center h-[600px] bg-gray-50 rounded-xl border border-gray-200 text-gray-400">
+              Nenhum sensor corresponde ao filtro
             </div>
           ) : (
             <SensorMap sensors={filtered} height="600px" />
@@ -66,7 +156,7 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Source statistics */}
+      {/* Source statistics — total por fonte (não respeita os outros filtros, só ilustrativo) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {SOURCE_OPTIONS.slice(1).map(src => {
           const count = sensors.filter(s => s.source === src.value).length;

@@ -4,6 +4,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRanking, useSensorsHistory, useSensorsHistoryFallback } from '../hooks/useEnvironmentalData.js';
+import { useSyncedFilters } from '../hooks/useSyncedFilters.js';
 import { Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import RankingTable from '../components/ranking/RankingTable.jsx';
 import { CLASSIFICATIONS, classify } from '../utils/icaud.js';
@@ -87,13 +88,16 @@ export default function Ranking() {
   const { t } = useTranslation();
   const [timePeriod, setTimePeriod]     = useState('live');
   const [limit, setLimit]               = useState(50);
-  const [filterClass, setFilter]        = useState('');
-  const [filterContinent, setContinent] = useState('');
-  const [filterCountry, setCountry]     = useState('');
+  const { filters, update: setFilters, clear: clearFilters, hasActive } = useSyncedFilters();
+  const filterClass     = filters.class;
+  const filterContinent = filters.continent;
+  const filterCountry   = filters.country;
 
   const { data: rankingRes, isLoading: rankingLoading, refetch } = useRanking(limit);
   const { data: historySensors = [], isLoading: historyLoading } = useSensorsHistory(timePeriod);
-  const { data: fallbackSensors = [] } = useSensorsHistoryFallback();
+  const { data: fallbackSensors = [] } = useSensorsHistoryFallback({
+    enabled: !rankingRes?.data || rankingRes.data.length === 0,
+  });
 
   const isHistoryMode = timePeriod !== 'live';
   const liveCities    = rankingRes?.data || [];
@@ -237,7 +241,7 @@ export default function Ranking() {
 
         <select
           value={filterContinent}
-          onChange={e => { setContinent(e.target.value); setCountry(''); }}
+          onChange={e => setFilters({ continent: e.target.value, country: '' })}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
         >
           <option value="">{t('ranking.allContinents')}</option>
@@ -248,7 +252,7 @@ export default function Ranking() {
 
         <select
           value={filterCountry}
-          onChange={e => setCountry(e.target.value)}
+          onChange={e => setFilters({ country: e.target.value })}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
         >
           <option value="">{t('ranking.allCountries')}</option>
@@ -259,7 +263,7 @@ export default function Ranking() {
 
         <select
           value={filterClass}
-          onChange={e => setFilter(e.target.value)}
+          onChange={e => setFilters({ class: e.target.value })}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
         >
           <option value="">{t('ranking.allClassifications')}</option>
@@ -267,6 +271,16 @@ export default function Ranking() {
             <option key={c.label} value={c.label}>{t(`classifications.${c.label}`, c.label)}</option>
           ))}
         </select>
+
+        {hasActive && (
+          <button
+            onClick={clearFilters}
+            className="text-sm text-gray-500 hover:text-gray-700 px-2 py-2"
+            title="Limpar filtros"
+          >
+            ✕ Limpar
+          </button>
+        )}
 
         <div className="text-sm text-gray-500 flex items-center">
           {t('ranking.showing', { count: filtered.length })}

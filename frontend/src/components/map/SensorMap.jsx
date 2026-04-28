@@ -12,6 +12,28 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 delete L.Icon.Default.prototype._getIconUrl;
 
+/**
+ * Monta a URL externa para o sensor, dependendo da fonte.
+ * Sensor.Community tem páginas por sensor (devices.sensor.community/sensors/<id>);
+ * Open-Meteo é uma API/modelo, então linkamos para sua documentação.
+ */
+function getSourceUrl(sensor) {
+  if (!sensor?.source) return null;
+  if (sensor.source === 'sensor_community') {
+    // IDs vêm como "sc_98058" — extrai o número
+    const numeric = String(sensor.id || '').replace(/^sc_/, '');
+    if (numeric) return `https://devices.sensor.community/sensors/${numeric}`;
+    return 'https://maps.sensor.community/';
+  }
+  if (sensor.source === 'open_meteo') {
+    return 'https://open-meteo.com/en/docs';
+  }
+  if (sensor.source === 'open_meteo_aq') {
+    return 'https://open-meteo.com/en/docs/air-quality-api';
+  }
+  return null;
+}
+
 /** Fit map bounds to show all sensors, only on first load */
 function FitBounds({ sensors }) {
   const map = useMap();
@@ -84,10 +106,12 @@ export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253],
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         sensor.source === 'sensor_community' ? 'bg-green-100 text-green-700' :
                         sensor.source === 'open_meteo' ? 'bg-orange-100 text-orange-700' :
+                        sensor.source === 'open_meteo_aq' ? 'bg-pink-100 text-pink-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
                         {sensor.source === 'sensor_community' ? '🌍 Sensor.Community' :
                          sensor.source === 'open_meteo' ? '⛅ Open-Meteo' :
+                         sensor.source === 'open_meteo_aq' ? '🌫️ Open-Meteo AQ' :
                          sensor.source}
                       </span>
                     )}
@@ -108,14 +132,30 @@ export default function SensorMap({ sensors = [], center = [-14.2350, -51.9253],
                         {sensor.exposure === 'outdoor' ? t('map.popup.outdoor') : t('map.popup.indoor')}
                       </span>
                     )}
-
-                    {/* Sensor count */}
-                    {sensor.sensorCount !== null && sensor.sensorCount !== undefined && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                        🔧 {t('map.popup.sensorCount', { count: sensor.sensorCount, plural: sensor.sensorCount !== 1 ? 's' : '' })}
-                      </span>
-                    )}
                   </div>
+
+                  {/* Sensor identification + link to source */}
+                  {(() => {
+                    const url = getSourceUrl(sensor);
+                    return (
+                      <div className="text-xs text-gray-600 mb-2 truncate">
+                        <span className="font-mono text-gray-500">{sensor.id}</span>
+                        {url && (
+                          <>
+                            {' · '}
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              ver fonte ↗
+                            </a>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* ICAU-D Score */}
                   <div className="flex items-center gap-2 mb-2">

@@ -6,15 +6,22 @@ import { api } from '../services/api.js';
 
 const STALE_TIME = 55 * 60 * 1000; // 55 min — just under the 1h backend cache TTL
 
+// Backoff exponencial enquanto o backend está esquentando (cache vazio):
+// 30s → 60s → 120s → 240s → fica em 240s.
+// Quando os dados chegam, o polling para (return false).
+function warmupBackoff(failureCount) {
+  const delays = [30_000, 60_000, 120_000, 240_000];
+  return delays[Math.min(failureCount, delays.length - 1)];
+}
+
 export function useSensors(params = {}) {
   return useQuery({
     queryKey: ['sensors', params],
     queryFn:  () => api.getSensors(params),
     staleTime: STALE_TIME,
-    // Retry every 30s while backend is still warming up (returns empty array)
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (!data || data.count === 0) return 30_000;
+      if (!data || data.count === 0) return warmupBackoff(query.state.fetchFailureCount || query.state.dataUpdateCount);
       return false;
     },
     select: res => res.data,
@@ -27,7 +34,7 @@ export function useCities(params = {}) {
     queryFn:  () => api.getCities(params),
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (!data || data.count === 0) return 30_000;
+      if (!data || data.count === 0) return warmupBackoff(query.state.fetchFailureCount || query.state.dataUpdateCount);
       return false;
     },
     staleTime: STALE_TIME,
@@ -41,7 +48,7 @@ export function useRanking(limit = 50) {
     queryFn:  () => api.getRanking(limit),
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (!data || data.loading === true || data.count === 0) return 30_000;
+      if (!data || data.loading === true || data.count === 0) return warmupBackoff(query.state.fetchFailureCount || query.state.dataUpdateCount);
       return false;
     },
     staleTime: STALE_TIME,
@@ -71,14 +78,16 @@ export function useSensorsHistory(period) {
 }
 
 /**
- * Always-on historical fallback:
- * fetches 7-day history from MongoDB — available even when live APIs are down.
+ * Historical fallback: 7-day history from MongoDB. Usado quando os dados ao
+ * vivo ainda não chegaram. Aceita um `enabled` controlado pelo chamador para
+ * evitar fetch redundante quando o live já está disponível.
  */
-export function useSensorsHistoryFallback() {
+export function useSensorsHistoryFallback({ enabled = true } = {}) {
   return useQuery({
     queryKey: ['sensors-history-fallback'],
     queryFn:  () => api.getSensorsHistory('week'),
     staleTime: STALE_TIME,
+    enabled,
     select: res => res.data ?? [],
   });
 }
