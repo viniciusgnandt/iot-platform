@@ -4,11 +4,13 @@
 /**
  * Classification thresholds and labels
  */
+// Faixas contínuas (sem gap entre 80 e 81 etc.) — score 80.5 cai em "Comfortable",
+// 81.0 em "Very Comfortable". `min` inclusivo, `max` exclusivo (exceto o topo).
 export const CLASSIFICATIONS = [
-  { min: 81, max: 100, label: 'Very Comfortable', color: '#22c55e', emoji: '🌿' },
-  { min: 61, max: 80,  label: 'Comfortable',      color: '#84cc16', emoji: '😊' },
-  { min: 31, max: 60,  label: 'Uncomfortable',    color: '#f59e0b', emoji: '😐' },
-  { min: 0,  max: 30,  label: 'Unhealthy',        color: '#ef4444', emoji: '⚠️' },
+  { min: 80, max: 100.001, label: 'Very Comfortable', color: '#22c55e', emoji: '🌿' },
+  { min: 60, max: 80,      label: 'Comfortable',      color: '#84cc16', emoji: '😊' },
+  { min: 30, max: 60,      label: 'Uncomfortable',    color: '#f59e0b', emoji: '😐' },
+  { min: 0,  max: 30,      label: 'Unhealthy',        color: '#ef4444', emoji: '⚠️' },
 ];
 
 /**
@@ -115,9 +117,7 @@ export function calculateICAUD(params) {
  * @returns {object}
  */
 export function classify(score) {
-  if (score === null || score === undefined) return null;
-  return (
-    CLASSIFICATIONS.find(c => score >= c.min && score <= c.max) ||
-    CLASSIFICATIONS[CLASSIFICATIONS.length - 1]
-  );
+  if (score === null || score === undefined || isNaN(score)) return null;
+  // Faixa: min inclusivo, max exclusivo (exceto a faixa topo)
+  return CLASSIFICATIONS.find(c => score >= c.min && score < c.max) || null;
 }

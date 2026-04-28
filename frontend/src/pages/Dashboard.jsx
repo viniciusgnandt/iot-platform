@@ -99,7 +99,16 @@ export default function Dashboard() {
 
   const usingFallback = !isHistoryMode && liveSensors.length === 0 && fallbackSensors.length > 0;
 
-  const allRanking = rankingRes?.data || [];
+  // Quando há filtro ativo, usamos `cities` (catálogo completo, ~258) ordenado
+  // como fonte do ranking — assim filtrar "Brasil" mostra todas as BR, não só
+  // as poucas que entraram no top global.
+  const hasActiveFilterPeek = filterClass || filterContinent || filterCountry;
+  const allRanking = (hasActiveFilterPeek && cities.length > 0)
+    ? [...cities]
+        .filter(c => c.icaud?.score !== null && c.icaud?.score !== undefined)
+        .sort((a, b) => (b.icaud.score || 0) - (a.icaud.score || 0))
+        .map((c, i) => ({ ...c, rank: i + 1 }))
+    : (rankingRes?.data || []);
   const rankingStillLoading = rankingLoading || rankingRes?.loading;
   const isLoading = sensorsLoading || rankingLoading || (isHistoryMode && historyLoading);
 

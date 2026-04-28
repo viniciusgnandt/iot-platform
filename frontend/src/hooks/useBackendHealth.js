@@ -6,34 +6,35 @@ import { useState, useEffect } from 'react';
 export function useBackendHealth() {
   const [isHealthy, setIsHealthy] = useState(true);
   const [lastChecked, setLastChecked] = useState(null);
-  const [isChecking, setIsChecking] = useState(false);
+  // `isChecking` só é true ANTES do primeiro check. Polls subsequentes não
+  // setam isso de volta — caso contrário o banner "Conectando..." piscaria
+  // a cada 10s mesmo com o backend funcionando perfeitamente.
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     let intervalId;
+    let firstCheckDone = false;
 
     const checkHealth = async () => {
-      setIsChecking(true);
       try {
         const response = await fetch('/api/health', {
           method: 'GET',
-          signal: AbortSignal.timeout(5000), // 5s timeout
+          signal: AbortSignal.timeout(5000),
         });
-
         setIsHealthy(response.ok);
-        setLastChecked(new Date());
       } catch (err) {
         setIsHealthy(false);
-        setLastChecked(new Date());
       } finally {
-        setIsChecking(false);
+        setLastChecked(new Date());
+        if (!firstCheckDone) {
+          firstCheckDone = true;
+          setIsChecking(false);
+        }
       }
     };
 
-    // Check immediately
     checkHealth();
-
-    // Check every 10 seconds
-    intervalId = setInterval(checkHealth, 10000);
+    intervalId = setInterval(checkHealth, 60_000); // poll a cada 60s
 
     return () => clearInterval(intervalId);
   }, []);

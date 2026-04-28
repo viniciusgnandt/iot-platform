@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRanking, useSensorsHistory, useSensorsHistoryFallback } from '../hooks/useEnvironmentalData.js';
+import { useRanking, useSensorsHistory, useSensorsHistoryFallback, useCities } from '../hooks/useEnvironmentalData.js';
 import { useSyncedFilters } from '../hooks/useSyncedFilters.js';
 import { Spinner, ErrorAlert } from '../components/ui/index.jsx';
 import RankingTable from '../components/ranking/RankingTable.jsx';
@@ -94,13 +94,25 @@ export default function Ranking() {
   const filterCountry   = filters.country;
 
   const { data: rankingRes, isLoading: rankingLoading, refetch } = useRanking(limit);
+  const { data: allCities = [] } = useCities();
   const { data: historySensors = [], isLoading: historyLoading } = useSensorsHistory(timePeriod);
   const { data: fallbackSensors = [] } = useSensorsHistoryFallback({
     enabled: !rankingRes?.data || rankingRes.data.length === 0,
   });
 
   const isHistoryMode = timePeriod !== 'live';
-  const liveCities    = rankingRes?.data || [];
+
+  // Quando há filtro de continente/país/classificação ativo, usamos a lista
+  // completa de cidades como fonte (até ~258), para que o ranking não fique
+  // limitado às top-N globais — caso contrário, ao filtrar "Brasil" só
+  // aparecem as 4 cidades BR que entraram no top 50 mundial.
+  const useFullCatalog = !isHistoryMode && hasActive && allCities.length > 0;
+  const liveCities = useFullCatalog
+    ? [...allCities]
+        .filter(c => c.icaud?.score !== null && c.icaud?.score !== undefined)
+        .sort((a, b) => (b.icaud.score || 0) - (a.icaud.score || 0))
+        .map((c, i) => ({ ...c, rank: i + 1 }))
+    : (rankingRes?.data || []);
 
   // Cidades históricas agregadas no frontend
   const historyCities = useMemo(
