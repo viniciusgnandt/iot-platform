@@ -34,6 +34,7 @@ export const config = {
 
   database: {
     mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/iot_platform',
+    mongoUriReadonly: process.env.MONGO_URI_READONLY || null,
     mongoEnabled: process.env.MONGO_ENABLED === 'true',
     mongoTimeout: 5000,
   },

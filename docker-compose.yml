@@ -1,11 +1,14 @@
 version: '3.8'
 
+# Imagens prontas, publicadas automaticamente pelo GitHub Actions a cada push
+# em main (.github/workflows/docker-publish.yml). O servidor só baixa — nunca
+# compila. Para buildar localmente (dev/teste), use:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+
 services:
   # Backend API
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/viniciusgnandt/iot-platform-backend:${IMAGE_TAG:-latest}
     container_name: iot_backend
     restart: unless-stopped
     ports:
@@ -35,9 +38,7 @@ services:
 
   # Frontend Web Server
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/viniciusgnandt/iot-platform-frontend:${IMAGE_TAG:-latest}
     container_name: iot_frontend
     restart: unless-stopped
     expose:
