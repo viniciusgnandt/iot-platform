@@ -118,11 +118,12 @@ export default function Layout({ children }) {
                 <AccessibilityMenu />
               </div>
 
-              {/* Language toggle */}
+              {/* Language toggle — alvo do 1º passo do tour (data-tour="lang-toggle") */}
               <button
                 onClick={toggleLang}
-                title={i18n.language === 'en' ? 'Switch to Portuguese' : 'Mudar para Inglês'}
-                aria-label={i18n.language === 'en' ? 'Switch to Portuguese' : 'Mudar para Inglês'}
+                data-tour="lang-toggle"
+                title={t('nav.switchLanguage')}
+                aria-label={t('nav.switchLanguage')}
                 className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
               >
                 {i18n.language === 'en' ? '🇧🇷 PT' : '🇺🇸 EN'}
@@ -131,8 +132,8 @@ export default function Layout({ children }) {
               {/* Reabrir o tour guiado */}
               <button
                 onClick={startTour}
-                title="Ver tour guiado"
-                aria-label="Ver tour guiado"
+                title={t('tour.open')}
+                aria-label={t('tour.open')}
                 className="ml-2 flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
               >
                 <span aria-hidden="true">❔</span>
@@ -147,11 +148,12 @@ export default function Layout({ children }) {
                 <AccessibilityMenu />
               </div>
 
-              {/* Idioma */}
+              {/* Idioma — mesmo data-tour do desktop; o tour pega o que estiver visível */}
               <button
                 onClick={toggleLang}
-                title={i18n.language === 'en' ? 'Switch to Portuguese' : 'Mudar para Inglês'}
-                aria-label={i18n.language === 'en' ? 'Switch to Portuguese' : 'Mudar para Inglês'}
+                data-tour="lang-toggle"
+                title={t('nav.switchLanguage')}
+                aria-label={t('nav.switchLanguage')}
                 className="flex items-center justify-center w-11 h-10 rounded-lg text-sm font-semibold border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
               >
                 {i18n.language === 'en' ? '🇧🇷' : '🇺🇸'}
@@ -161,7 +163,7 @@ export default function Layout({ children }) {
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(true)}
-                aria-label="Abrir menu"
+                aria-label={t('nav.openMenu')}
                 aria-expanded={isMenuOpen}
                 className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
               >
@@ -212,7 +214,7 @@ export default function Layout({ children }) {
             <button
               type="button"
               onClick={() => setIsMenuOpen(false)}
-              aria-label="Fechar menu"
+              aria-label={t('nav.closeMenu')}
               className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
             >
               <span className="text-2xl" aria-hidden="true">
@@ -272,7 +274,7 @@ export default function Layout({ children }) {
                 ❔
               </span>
 
-              Ver tour guiado
+              {t('tour.open')}
             </button>
 
           </div>

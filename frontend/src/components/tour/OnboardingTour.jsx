@@ -3,8 +3,13 @@
 // elemento alvo (que continua clicável) e mostra um balão com a
 // explicação. Clicar dentro do recorte avança o passo — incentiva o
 // usuário a interagir com o elemento de verdade, não só ler texto.
+//
+// Todos os textos vêm do i18n (bloco `tour` em locales/*.json), então o
+// tour acompanha o idioma da página. O primeiro passo é a escolha do
+// idioma: ao clicar em Português/English, página e balão trocam juntos.
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const PADDING = 8;
 // Largura do balão em pixels reais (não rem) — precisa ficar em sync com o
@@ -13,8 +18,24 @@ const PADDING = 8;
 // no painel de acessibilidade, e o cálculo de posição vaza da tela.
 const TOOLTIP_WIDTH = 320;
 
+const LANGUAGES = [
+  { code: 'pt', flag: '🇧🇷' },
+  { code: 'en', flag: '🇺🇸' },
+];
+
+// Um mesmo data-tour pode existir duas vezes no DOM (cabeçalho desktop e
+// mobile). querySelector pegaria sempre o primeiro, que no celular está
+// oculto com tamanho zero — e o passo seria pulado. Pega o primeiro visível.
+function findVisible(selector) {
+  for (const el of document.querySelectorAll(selector)) {
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) return el;
+  }
+  return null;
+}
+
 function getRect(selector) {
-  const el = document.querySelector(selector);
+  const el = findVisible(selector);
   if (!el) return null;
   el.scrollIntoView({ block: 'center', behavior: 'smooth' });
   const r = el.getBoundingClientRect();
@@ -27,6 +48,7 @@ function getRect(selector) {
 }
 
 export default function OnboardingTour({ isActive, step, stepIndex, total, next, prev, finish }) {
+  const { t, i18n } = useTranslation();
   const [rect, setRect] = useState(null);
 
   const updateRect = useCallback(() => {
@@ -67,7 +89,15 @@ export default function OnboardingTour({ isActive, step, stepIndex, total, next,
     return () => document.removeEventListener('keydown', handleKey);
   }, [isActive, finish, next, prev]);
 
+  const chooseLanguage = (code) => {
+    i18n.changeLanguage(code);
+    next();
+  };
+
   if (!isActive || !step || !rect) return null;
+
+  const isLanguageStep = step.type === 'language';
+  const isLastStep = stepIndex + 1 === total;
 
   // Tooltip: tenta ficar abaixo do alvo; se não couber, vai pra cima
   const spaceBelow = window.innerHeight - (rect.top + rect.height);
@@ -75,7 +105,7 @@ export default function OnboardingTour({ isActive, step, stepIndex, total, next,
   const tooltipLeft = Math.min(Math.max(16, rect.left), window.innerWidth - TOOLTIP_WIDTH - 16);
 
   return (
-    <div className="fixed inset-0 z-[2000]" role="dialog" aria-modal="true" aria-label="Tour guiado">
+    <div className="fixed inset-0 z-[2000]" role="dialog" aria-modal="true" aria-label={t('tour.dialogLabel')}>
       {/* 4 painéis escuros ao redor do recorte — o recorte fica 100% clicável */}
       <div className="absolute bg-black/60 transition-all duration-300" style={{ top: 0, left: 0, right: 0, height: Math.max(0, rect.top) }} />
       <div className="absolute bg-black/60 transition-all duration-300" style={{ top: rect.top + rect.height, left: 0, right: 0, bottom: 0 }} />
@@ -97,42 +127,70 @@ export default function OnboardingTour({ isActive, step, stepIndex, total, next,
       >
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">
-            Passo {stepIndex + 1} de {total}
+            {t('tour.stepOf', { current: stepIndex + 1, total })}
           </span>
           <button
             onClick={finish}
-            aria-label="Fechar tour"
+            aria-label={t('tour.close')}
             className="text-gray-400 hover:text-gray-600 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded"
           >
             ✕
           </button>
         </div>
-        <h3 className="font-bold text-gray-900 mb-1.5">{step.title}</h3>
-        <p className="text-sm text-gray-600 mb-4">{step.desc}</p>
+        <h3 className="font-bold text-gray-900 mb-1.5">{t(`tour.steps.${step.key}.title`)}</h3>
+        <p className="text-sm text-gray-600 mb-4">{t(`tour.steps.${step.key}.desc`)}</p>
+
+        {/* Passo de idioma: dois botões grandes no lugar de Voltar/Próximo.
+            Escolher já avança — o próximo passo aparece no idioma escolhido,
+            o que confirma a escolha na hora. */}
+        {isLanguageStep && (
+          <div className="flex gap-2 mb-4" role="group" aria-label={t('tour.steps.language.title')}>
+            {LANGUAGES.map(({ code, flag }) => {
+              const active = i18n.language === code;
+              return (
+                <button
+                  key={code}
+                  onClick={() => chooseLanguage(code)}
+                  aria-pressed={active}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 ${
+                    active
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span aria-hidden="true">{flag}</span>
+                  {t(`tour.steps.language.${code}`)}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <button
             onClick={finish}
             className="text-xs text-gray-500 hover:text-gray-700 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded"
           >
-            Pular tour
+            {t('tour.skip')}
           </button>
-          <div className="flex gap-2">
-            {stepIndex > 0 && (
+          {!isLanguageStep && (
+            <div className="flex gap-2">
+              {stepIndex > 0 && (
+                <button
+                  onClick={prev}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+                >
+                  {t('tour.back')}
+                </button>
+              )}
               <button
-                onClick={prev}
-                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+                onClick={next}
+                className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
               >
-                Voltar
+                {isLastStep ? t('tour.finish') : t('tour.next')}
               </button>
-            )}
-            <button
-              onClick={next}
-              className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
-            >
-              {stepIndex + 1 === total ? 'Concluir' : 'Próximo'}
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
